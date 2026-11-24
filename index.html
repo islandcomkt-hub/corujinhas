@@ -22,26 +22,10 @@
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "MedicalOrganization", "name": "Instituto de Saúde Corujinhas", "url": "https://corujinhas.islandcompany.space/", "logo": "https://corujinhas.islandcompany.space/assets/marca/logo-horizontal-900.webp", "telephone": "(31) 2300-0757", "sameAs": ["https://www.instagram.com/institutocorujinhas/"], "subOrganization": [{"@type": "MedicalClinic", "name": "Instituto de Saúde Corujinhas — Horto", "telephone": "(31) 2300-0278", "address": {"@type": "PostalAddress", "streetAddress": "Av. Castelo Branco, 807 · Sl 101 · Horto, Ipatinga", "addressRegion": "MG", "addressCountry": "BR"}}, {"@type": "MedicalClinic", "name": "Instituto de Saúde Corujinhas — Fabriciano", "telephone": "(31) 2300-0286", "address": {"@type": "PostalAddress", "streetAddress": "R. Dr. Moacir Birro, 325 A · Centro, Cel. Fabriciano", "addressRegion": "MG", "addressCountry": "BR"}}, {"@type": "MedicalClinic", "name": "Instituto de Saúde Corujinhas — Bom Jardim", "telephone": "(31) 2300-0757", "address": {"@type": "PostalAddress", "streetAddress": "R. Papoula, 143 · Bom Jardim, Ipatinga", "addressRegion": "MG", "addressCountry": "BR"}}, {"@type": "MedicalClinic", "name": "Instituto de Saúde Corujinhas — Shopping Vale do Aço", "telephone": "(31) 2300-0757", "address": {"@type": "PostalAddress", "streetAddress": "Shopping Vale do Aço · 2º andar · Ipatinga", "addressRegion": "MG", "addressCountry": "BR"}}]}</script>
 <link rel="preload" as="image" href="assets/marca/letras/01-O.webp">
 <link rel="preload" as="image" href="assets/equipe/sheila-destaque.webp">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/styles.css?v=cbc1f5183e">
-<script>
-  /* Abertura com a logo: uma vez por sessão, nunca ao voltar pelo histórico, nunca com movimento reduzido no sistema.
-     A camada não recebe cliques e some sozinha. */
-  (function () {
-    var r = document.documentElement; r.classList.add("js");
-    try {
-      var nav = performance.getEntriesByType && performance.getEntriesByType("navigation")[0];
-      var voltou = nav && nav.type === "back_forward";
-      var reduzido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (!reduzido && !voltou && !sessionStorage.getItem("corujinhas-abertura")) {
-        r.classList.add("com-abertura");
-        sessionStorage.setItem("corujinhas-abertura", "1");
-      }
-    } catch (e) {}
-  })();
-</script>
+<link rel="preload" as="font" type="font/woff2" href="assets/fontes/nunito-latin-800-normal.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="assets/fontes/figtree-latin-400-normal.woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/styles.css?v=7000e962c2">
+<script src="assets/js/inicio.js?v=c0e9e4df15"></script>
 </head>
 <body>
 <div class="intro" id="intro" aria-hidden="true">
@@ -71,6 +55,8 @@
     <symbol id="i-lupa" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M15.5 15.5 20 20" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
     <symbol id="i-agenda" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
     <symbol id="i-relogio" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-insta" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.2" cy="6.8" r="1.2" fill="currentColor"/></symbol>
+    <symbol id="i-escudo" viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.5c0 4.6 3.1 8.3 7.5 9.5 4.4-1.2 7.5-4.9 7.5-9.5V6L12 3Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="m8.8 12 2.2 2.2 4.3-4.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="i-estrela" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.8l2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3L2.9 9.5l6.3-.9L12 2.8Z"/></symbol>
     <symbol id="i-coracao-esteto" viewBox="0 0 64 56">
@@ -312,16 +298,68 @@
 
 <footer class="rodape">
   <div class="caixa rodape__in">
-    <img class="rodape__logo" src="assets/marca/logo-horizontal-420.webp" width="420" height="136" alt="Corujinhas — Instituto de Saúde" loading="lazy">
-    <div class="rodape__dados">
-      <p><b>Instituto de Saúde Corujinhas</b> · CNPJ 46.561.948/0001-17</p>
-      <p>Responsável técnica: Dra. Sheila Tomaz — CRM 76044-MG</p>
+    <div class="rodape__grade">
+      <div class="rodape__marca">
+        <img class="rodape__logo" src="assets/marca/logo-horizontal-420.webp" width="420" height="136" alt="Corujinhas — Instituto de Saúde" loading="lazy">
+        <p class="rodape__frase">Cuidado para bebês, crianças, adultos e toda a família, em Ipatinga e Coronel Fabriciano.</p>
+        <div class="rodape__sociais">
+          <a class="rodape__social" href="https://www.instagram.com/institutocorujinhas/" target="_blank" rel="noopener noreferrer" aria-label="Instagram do Instituto Corujinhas (abre em nova aba)"><svg aria-hidden="true"><use href="#i-insta"/></svg></a>
+          <a class="rodape__social rodape__social--wa" data-link-geral href="https://wa.me/553123000757" aria-label="WhatsApp da central de agendamento"><svg aria-hidden="true"><use href="#i-wa"/></svg></a>
+        </div>
+      </div>
+      <nav class="rodape__col" aria-labelledby="rod-atend">
+        <h2 id="rod-atend">Atendimento</h2>
+        <ul>
+          <li><a href="#atendimentos">Agendar consulta</a></li>
+          <li><a href="#equipe">Nossa equipe</a></li>
+          <li><a href="#servicos">Urgência e teleconsulta</a></li>
+          <li><a href="#convenios">Convênios e parcerias</a></li>
+        </ul>
+      </nav>
+      <nav class="rodape__col" aria-labelledby="rod-unid">
+        <h2 id="rod-unid">Unidades</h2>
+        <ul>
+          <li><a href="#unidades">Horto · Ipatinga</a></li>
+          <li><a href="#unidades">Centro · Cel. Fabriciano</a></li>
+          <li><a href="#unidades">Bom Jardim · Ipatinga</a></li>
+          <li><a href="#unidades">Shopping Vale do Aço</a></li>
+        </ul>
+      </nav>
+      <div class="rodape__col">
+        <h2>Contato</h2>
+        <ul>
+          <li><a data-link-geral href="https://wa.me/553123000757">WhatsApp (31) 2300-0757</a></li>
+          <li><a href="https://www.instagram.com/institutocorujinhas/" target="_blank" rel="noopener noreferrer">@institutocorujinhas</a></li>
+          <li class="rodape__emerg"><a href="tel:192">Emergência: SAMU 192</a></li>
+        </ul>
+      </div>
     </div>
-    <div class="rodape__links">
-      <a href="https://www.instagram.com/institutocorujinhas/">Instagram @institutocorujinhas</a>
-      <a data-link-geral href="https://wa.me/553123000757">WhatsApp (31) 2300-0757</a>
+
+    <details class="rodape__priv">
+      <summary><svg aria-hidden="true"><use href="#i-escudo"/></svg><span>Privacidade e seus dados</span></summary>
+      <div class="rodape__priv-corpo">
+        <ul>
+          <li>O site não tem cadastro, login nem banco de dados, e não usa cookies de rastreamento ou publicidade.</li>
+          <li>O pré-cadastro do agendamento fica guardado só neste aparelho, e só se você marcar "Lembrar neste aparelho". Ele vai para a central apenas dentro da mensagem do WhatsApp, que você revisa antes de enviar.</li>
+          <li>Não pedimos informações de saúde no site. Sintomas e detalhes clínicos são tratados diretamente com a equipe.</li>
+          <li>Seus direitos seguem a Lei Geral de Proteção de Dados (LGPD). Para dúvidas sobre dados, fale com a central.</li>
+        </ul>
+        <button type="button" class="rodape__apagar" id="apagar-dados">Apagar dados salvos neste aparelho</button>
+        <p class="rodape__apagado" id="apagar-status" role="status" aria-live="polite"></p>
+      </div>
+    </details>
+
+    <div class="rodape__base">
+      <div class="rodape__legal">
+        <p><b>Instituto de Saúde Corujinhas</b> · CNPJ 46.561.948/0001-17</p>
+        <p>Responsável técnica: Dra. Sheila Tomaz · CRM 76044-MG</p>
+        <p class="rodape__nota">© 2026 Instituto de Saúde Corujinhas. Registros profissionais transcritos dos materiais de divulgação do instituto.</p>
+      </div>
+      <a class="rodape__dev" href="https://islandcompany.space" target="_blank" rel="noopener noreferrer" aria-label="Desenvolvido por Island Company (abre em nova aba)">
+        <span>Desenvolvido por</span>
+        <i class="rodape__island" aria-hidden="true"></i>
+      </a>
     </div>
-    <p class="rodape__nota">Registros profissionais transcritos dos materiais de divulgação do instituto. Em caso de emergência, ligue 192.</p>
   </div>
 </footer>
 
@@ -380,6 +418,6 @@
 <script src="assets/js/config.js?v=9aeda51dcc"></script>
 <script src="assets/js/mensagens.js?v=222fa19a8c"></script>
 <script src="assets/js/mapas.js?v=b142939b1a"></script>
-<script src="assets/js/app.js?v=86e6f9d35b"></script>
+<script src="assets/js/app.js?v=1478176d7c"></script>
 </body>
 </html>

@@ -47,6 +47,10 @@
   const apagar = (k) => { try { localStorage.removeItem(k); } catch { /* sem armazenamento */ } };
   let pacientes = ler(CHAVE_PAC, []);
   if (!Array.isArray(pacientes)) pacientes = [];
+  // minimização de dados: cadastro salvo vale por até 12 meses neste aparelho; depois é descartado
+  const VALIDADE = 365 * 24 * 60 * 60 * 1000;
+  const validos = pacientes.filter((p) => p && typeof p.nome === "string" && (!p.salvoEm || Date.now() - p.salvoEm < VALIDADE));
+  if (validos.length !== pacientes.length) { pacientes = validos; gravar(CHAVE_PAC, pacientes); }
   let pedidoAtual = null, origemAgenda = null;
   let unidadeId = ler(CHAVE_UNI, "");
 
@@ -82,7 +86,7 @@
     lista.innerHTML = pacientes.map((p, i) => {
       const meta = [p.tipo === "crianca" ? "Criança" : "Adulto", textoIdade(idade(p.nascimento)), p.atendimento].filter(Boolean).join(" · ");
       return `<li style="--i:${i}">
-        <a class="paciente" href="${esc(linkPara(p))}" target="_blank" rel="noopener" data-paciente="${esc(p.id)}">
+        <a class="paciente" href="${esc(linkPara(p))}" target="_blank" rel="noopener noreferrer" data-paciente="${esc(p.id)}">
           <span class="paciente__avatar" data-tipo="${esc(p.tipo)}" aria-hidden="true">${esc(p.nome.trim().charAt(0).toUpperCase())}</span>
           <span class="paciente__txt"><strong>${esc(p.nome)}</strong><small>${esc(meta)}</small></span>
           <span class="paciente__ir"><svg aria-hidden="true"><use href="#i-wa"/></svg>Agendar</span>
@@ -152,8 +156,10 @@
     return { id: `p${Date.now().toString(36)}`, tipo, nome, nascimento: f.nascimento.value, cpf: cpf ? mascaraCPF(cpf) : "", responsavel: tipo === "crianca" ? resp : "", atendimento: f.atendimento.value };
   }
   function abrirWhatsApp(url) {
-    const w = window.open(url, "_blank", "noopener");
-    if (!w) location.href = url;
+    // abre em nova aba sem dar à página do WhatsApp acesso a esta (opener zerado);
+    // só navega na própria aba se o navegador bloquear a nova
+    const w = window.open(url, "_blank");
+    if (w) { try { w.opener = null; } catch { /* já isolada */ } } else location.href = url;
     const aviso = $("#aviso-wa");
     aviso.textContent = "Abrindo o WhatsApp da central com a mensagem pronta…";
     aviso.classList.add("aviso-wa--on"); setTimeout(() => aviso.classList.remove("aviso-wa--on"), 3200);
@@ -164,7 +170,8 @@
     if (!pac) return;
     if (form.lembrar.checked) {
       const igual = pacientes.findIndex((p) => p.nome.toLowerCase() === pac.nome.toLowerCase() && p.nascimento === pac.nascimento);
-      if (igual >= 0) pacientes[igual] = { ...pac, id: pacientes[igual].id }; else pacientes.push(pac);
+      const registro = { ...pac, salvoEm: Date.now() };
+      if (igual >= 0) pacientes[igual] = { ...registro, id: pacientes[igual].id }; else pacientes.push(registro);
       gravar(CHAVE_PAC, pacientes);
     }
     const url = linkPara(pac);
@@ -196,6 +203,15 @@
   });
   dlg.addEventListener("close", () => origemAgenda?.focus({ preventScroll: true }));
   preencherAtendimento();
+
+  // Rodapé: apagar tudo o que o site guardou neste aparelho
+  const botaoApagar = $("#apagar-dados");
+  if (botaoApagar) botaoApagar.addEventListener("click", () => {
+    pacientes = []; unidadeId = "";
+    try { Object.keys(localStorage).filter((k) => k.startsWith("corujinhas-")).forEach((k) => localStorage.removeItem(k)); } catch { /* sem armazenamento */ }
+    try { Object.keys(sessionStorage).filter((k) => k.startsWith("corujinhas-") && k !== "corujinhas-abertura").forEach((k) => sessionStorage.removeItem(k)); } catch { /* sem armazenamento */ }
+    $("#apagar-status").textContent = "Pronto. Nenhum dado do agendamento ficou salvo neste aparelho.";
+  });
 
   document.addEventListener("click", (e) => {
     const a = e.target.closest("a");
@@ -528,7 +544,7 @@
     </svg>`;
   }
 
-  const verMapa = (u, cls) => u.mapa ? `<a class="${cls}" href="${esc(u.mapa)}" target="_blank" rel="noopener" aria-label="Ver a unidade ${esc(u.nome)} no mapa"><svg aria-hidden="true"><use href="#i-mapa"/></svg>Ver mapa</a>` : "";
+  const verMapa = (u, cls) => u.mapa ? `<a class="${cls}" href="${esc(u.mapa)}" target="_blank" rel="noopener noreferrer" aria-label="Ver a unidade ${esc(u.nome)} no mapa"><svg aria-hidden="true"><use href="#i-mapa"/></svg>Ver mapa</a>` : "";
   const ligarAgora = (u) => `<a class="u-btn" href="tel:${esc(u.telefone.tel)}" aria-label="Ligar agora para a unidade ${esc(u.nome)}, ${esc(u.telefone.exibicao)}"><svg aria-hidden="true"><use href="#i-tel"/></svg>Ligar agora</a>`;
   const agendarAqui = (u) => `<a class="u-btn u-btn--forte" href="#" data-agendar-unidade="${esc(u.id)}" data-unidade-fixa="${esc(u.id)}"><svg aria-hidden="true"><use href="#i-wa"/></svg>Agendar</a>`;
 
@@ -543,7 +559,7 @@
           ${u.extra ? `<div class="unidade__acoes">${verMapa(u, "u-btn")}${ligarAgora(u)}${agendarAqui(u)}</div>
           <div class="unidade__extra"><p><b>${esc(u.extra.rotulo)}</b><span>${esc(u.extra.exibicao)}</span></p>
             <span class="unidade__extra-acoes">
-              ${u.extra.whatsapp ? `<a class="u-mini" href="https://wa.me/${esc(u.extra.whatsapp)}?text=${encodeURIComponent(`Olá! Vim pelo site do Instituto Corujinhas e gostaria de falar sobre ${u.extra.rotulo.toLowerCase()} na unidade ${u.nome}.`)}" target="_blank" rel="noopener" aria-label="WhatsApp da ${esc(u.extra.rotulo)} ${esc(u.nome)}"><svg aria-hidden="true"><use href="#i-wa"/></svg>WhatsApp</a>` : ""}
+              ${u.extra.whatsapp ? `<a class="u-mini" href="https://wa.me/${esc(u.extra.whatsapp)}?text=${encodeURIComponent(`Olá! Vim pelo site do Instituto Corujinhas e gostaria de falar sobre ${u.extra.rotulo.toLowerCase()} na unidade ${u.nome}.`)}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp da ${esc(u.extra.rotulo)} ${esc(u.nome)}"><svg aria-hidden="true"><use href="#i-wa"/></svg>WhatsApp</a>` : ""}
               <a class="u-mini" href="tel:${esc(u.extra.tel)}" aria-label="Ligar para ${esc(u.extra.rotulo)} ${esc(u.nome)}"><svg aria-hidden="true"><use href="#i-tel"/></svg>Ligar</a>
             </span></div>`
           : `<div class="unidade__fim"><div class="unidade__acoes unidade__acoes--2">${ligarAgora(u)}${agendarAqui(u)}</div>

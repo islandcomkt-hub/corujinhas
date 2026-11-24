@@ -25,6 +25,19 @@ assets/marca/                  logo horizontal corrigida (webp) e logo circular 
 
 `config.js` foi gerado a partir de `ATUALIZACOES_SITE/CONFIGURACAO_ATENDIMENTOS.json`, `ADAPTACAO_SITE/SERVICOS_E_BOTOES.json` e `CONVENIOS_PENDENTES.json`. Edite direto nele.
 
+## Segurança e privacidade (24/11/2026)
+
+Medidas que não mudam o visual do site:
+
+- **Cabeçalhos HTTP (vercel.json):** Content-Security-Policy restrita ao próprio domínio (sem scripts embutidos, sem iframes, sem plugins, `frame-ancestors 'none'` contra clickjacking), HSTS de 2 anos, X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy strict-origin-when-cross-origin, Cross-Origin-Opener-Policy same-origin e Permissions-Policy bloqueando câmera, microfone, localização, pagamento, sensores e rastreamento por tópicos.
+- **Sem terceiros:** as fontes (Nunito e Figtree) agora são servidas pelo próprio site; antes vinham do Google Fonts, que recebia o IP de cada visitante. O site não carrega nenhum script, rastreador ou cookie de terceiros.
+- **Script da abertura** saiu do HTML para `assets/js/inicio.js`, para a política de segurança não precisar liberar código embutido.
+- **Links externos** com `noopener noreferrer`. O WhatsApp abre em nova aba sem acesso a esta página. Também foi corrigido um defeito: o site redirecionava a própria aba para o WhatsApp além de abrir a nova.
+- **Dados do pré-cadastro:** continuam só no aparelho (localStorage), opcionais ("Lembrar neste aparelho"), expiram sozinhos após 12 meses e podem ser apagados pelo botão "Apagar dados salvos neste aparelho" no rodapé. O registro de intenção não guarda nome nem dados do paciente. Nenhum dado clínico é pedido.
+- **Rodapé:** aviso "Privacidade e seus dados" (LGPD) e crédito "Desenvolvido por Island Company" com a logo como marca-d'água de uma cor só (`assets/marca/island-company-mascara.png`, a cor vem do CSS).
+
+Limite conhecido: o CPF e o nome vão dentro do link do WhatsApp (é como o wa.me recebe a mensagem pronta). Fica no histórico do navegador de quem agendou; não passa por servidor do site.
+
 ## Versão 5 (24/11/2026)
 
 - **Agendamento com pré-cadastro:** todo botão de agendar abre um cartão com a unidade (chips) e o paciente.
