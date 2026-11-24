@@ -332,7 +332,6 @@
       const p = C.profissionais[id], areas = areasDe(id);
       if (!areas.length) return "";
       const varias = areas.length > 1;
-      const tags = areas.map((a) => `<li class="medico__tag" data-cor="${esc(a.cor)}">${esc(a.rotulo.replace(/­/g, ""))}</li>`).join("");
       const opcoes = areas.map((a, k) => `
         <li style="--k:${k}"><a class="medico__op" data-cor="${esc(a.cor)}" href="#" data-med="${esc(id)}" data-med-area="${esc(a.id)}" draggable="false">
           ${icone(a.icone, "medico__op-icone")}<span><strong>${esc(a.rotulo.replace(/\u00ad/g, ""))}</strong><small>Agendar</small></span>
@@ -346,7 +345,6 @@
         <div class="pro__texto">
           <h3 class="pro__nome">${esc(p.nome)}</h3>
           <p class="pro__desc">${descricaoHTML(p.descricao)}</p>
-          <ul class="medico__tags" aria-label="Atende em">${tags}</ul>
         </div>
         ${varias
           ? `<button type="button" class="btn btn--card medico__abrir" aria-expanded="false" aria-controls="op-${esc(id)}"><span>Escolher consulta</span><span class="medico__n">${areas.length}</span></button>`
