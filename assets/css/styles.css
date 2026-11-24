@@ -1057,3 +1057,62 @@ html.js .cat:not(.cat--visivel) { filter: blur(3px); }
   html.js [data-texto] .palavra > span, html.js [data-entrada], html.js [data-entrada] > *, html.js .cat { filter: none !important; opacity: 1 !important; transform: none !important; }
   .painel--entra .pro, .painel--entra .sem-equipe, .painel--entra .painel__cabeca > * { animation: none !important; }
 }
+
+/* ===================== v9: brilho da urgência e seção da equipe ===================== */
+/* Farol da urgência: vermelho, girando em volta da sirene */
+.atalho--urgencia::after { background: conic-gradient(from var(--farol) at 50% 34%, transparent 0 64%, rgb(255 70 96 / .75) 78%, rgb(255 150 120 / .35) 84%, transparent 94%); mix-blend-mode: screen; }
+.hero__atalhos .atalho--urgencia { background: linear-gradient(160deg, #D8435C, #A2223A) !important; }
+.atalho--urgencia .sirene::before { background: radial-gradient(circle, rgb(255 205 90 / .95), rgb(255 120 90 / .35) 45%, rgb(255 90 90 / 0) 70%); }
+
+/* Seção da equipe */
+.secao--equipe { --fundo: #FFFBF6; z-index: 5; }
+.secao--ceu { z-index: 6; } .secao--pessego { z-index: 7; } .secao--creme { z-index: 8; }
+.equipe .fileira { padding-top: 10px; padding-bottom: 18px; }
+.medico { position: relative; cursor: pointer; }
+.medico:hover { transform: translateY(-4px); box-shadow: var(--sombra-alta); }
+.medico--destaque { border-color: rgb(238 125 150 / .45); box-shadow: 0 0 0 3px rgb(238 125 150 / .12), var(--sombra); }
+.medico__selo { position: absolute; left: 10px; top: 10px; padding: 4px 10px; border-radius: 999px; background: rgb(255 255 255 / .92); color: var(--rosa-escuro); font-size: 12px; font-weight: 800; box-shadow: 0 4px 12px -6px rgb(19 63 108 / .35); }
+.medico .pro__nome { font-size: 18px; }
+.medico__tags { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 5px; }
+.medico__tag { padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--f-azul); color: var(--azul-escuro); }
+.medico__tag[data-cor="pessego"], .medico__op[data-cor="pessego"] { --t: var(--f-pessego); --c: #B5562C; --b: rgb(245 165 126 / .55); }
+.medico__tag[data-cor="azul"], .medico__op[data-cor="azul"] { --t: var(--f-azul); --c: #2F63A6; --b: rgb(63 120 190 / .4); }
+.medico__tag[data-cor="verde"], .medico__op[data-cor="verde"] { --t: var(--f-verde); --c: var(--verde-escuro); --b: rgb(95 179 109 / .45); }
+.medico__tag[data-cor="rosa"], .medico__op[data-cor="rosa"] { --t: var(--f-rosa); --c: var(--rosa-escuro); --b: rgb(238 125 150 / .45); }
+.medico__tag[data-cor="ceu"], .medico__op[data-cor="ceu"] { --t: var(--f-ceu); --c: #1F7FA8; --b: rgb(79 174 214 / .45); }
+.medico__tag { background: var(--t, var(--f-azul)); color: var(--c, var(--azul-escuro)); }
+.medico__abrir { background: #fff; color: var(--azul-escuro); border: 1.5px solid rgb(19 63 108 / .18); gap: 10px; justify-content: center; }
+.medico__abrir:hover { background: var(--azul-escuro); color: #fff; }
+.medico__n { display: grid; place-items: center; min-width: 22px; height: 22px; border-radius: 999px; background: var(--rosa); color: #fff; font-size: 12px; font-weight: 800; }
+/* painel de formas de consulta, sobe por cima do card */
+.medico__opcoes { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; padding: 14px 12px 12px; border-radius: 22px 22px var(--raio) var(--raio); background: rgb(255 255 255 / .97); backdrop-filter: blur(10px); box-shadow: 0 -16px 30px -18px rgb(19 63 108 / .45); transform: translateY(102%); transition: transform .45s var(--suave); cursor: default; }
+.medico--aberto .medico__opcoes { transform: none; }
+.medico__opcoes-topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 2px 10px 4px; }
+.medico__opcoes-topo p { font: 800 15px var(--f-titulo); color: var(--azul-escuro); }
+.medico__fechar { width: 32px; height: 32px; border: 0; border-radius: 50%; background: var(--f-azul); color: var(--azul-escuro); font-size: 20px; line-height: 1; cursor: pointer; flex: none; }
+.medico__opcoes ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.medico__opcoes li { opacity: 0; transform: translateY(12px); transition: opacity .4s var(--suave), transform .5s var(--suave); transition-delay: calc(.12s + var(--k) * 70ms); }
+.medico--aberto .medico__opcoes li { opacity: 1; transform: none; }
+.medico__op { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 16px; background: var(--t); border: 1.5px solid var(--b); color: var(--c); text-decoration: none; transition: transform .25s var(--suave), box-shadow .25s var(--suave), background-color .25s; }
+.medico__op:hover, .medico__op:focus-visible { transform: translateX(3px); box-shadow: 0 8px 18px -10px var(--c); outline: none; background: #fff; }
+.medico__op .icone { --s: 38px; flex: none; }
+.medico__op span { display: grid; min-width: 0; }
+.medico__op strong { font: 800 15px/1.2 var(--f-titulo); color: var(--azul-escuro); }
+.medico__op small { font-size: 12.5px; font-weight: 700; color: var(--c); }
+.medico__op-seta { width: 18px; height: 18px; color: var(--c); transition: transform .25s var(--suave); }
+.medico__op:hover .medico__op-seta { transform: translateX(3px); }
+html.js #equipe-lista:not(.visivel) .medico { opacity: 0; transform: translate3d(28px, 0, 0); }
+#equipe-lista .medico { transition: opacity .7s var(--suave), transform .8s var(--suave), box-shadow .3s; transition-delay: calc(var(--i) * 70ms); }
+#equipe-lista.visivel .medico:hover { transition-delay: 0s; }
+@media (max-width: 600px) { .secao--equipe .secao__cabeca--linha { justify-content: center; } }
+@media (prefers-reduced-motion: reduce) {
+  .medico__opcoes, .medico__opcoes li { transition: none !important; }
+  html.js #equipe-lista .medico { opacity: 1 !important; transform: none !important; }
+}
+.medico__opcoes { padding: 12px 10px 10px; }
+.medico__opcoes-topo p { font-size: 14px; line-height: 1.25; }
+.medico__op { gap: 8px; padding: 7px 8px; border-radius: 14px; }
+.medico__op .icone { --s: 30px; }
+.medico__op strong { font-size: 14px; line-height: 1.15; }
+.medico__op small { font-size: 12px; }
+@media (max-width: 600px) { .equipe .fileira__controles { display: none !important; } }

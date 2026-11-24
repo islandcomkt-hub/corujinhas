@@ -218,10 +218,11 @@
         <span class="cat__nome">${esc(a.rotulo)}</span>
         <span class="cat__meta">${contagem(a.profissionais.length)}</span>
       </button>`;
-    const com = C.areas.filter((a) => !a.semEquipeNominal);
-    const sem = C.areas.filter((a) => a.semEquipeNominal);
+    const noSeletor = C.areas.filter((a) => a.id !== "acompanhamento_adulto"); // tem seção própria
+    const com = noSeletor.filter((a) => !a.semEquipeNominal);
+    const sem = noSeletor.filter((a) => a.semEquipeNominal);
     categorias.innerHTML = `
-      <div class="cat-grupo"><h3 class="cat-grupo__t">Com equipe apresentada</h3>
+      <div class="cat-grupo"><h3 class="cat-grupo__t">Equipe apresentada</h3>
         <div class="cat-grade">${com.map(botao).join("")}</div></div>
       <div class="cat-grupo"><h3 class="cat-grupo__t">Consulte a central</h3>
         <div class="cat-grade">${sem.map((a, i) => botao(a, com.length + i)).join("")}</div></div>`;
@@ -321,6 +322,80 @@
   painel.addEventListener("keydown", (e) => { if (e.key === "Escape" && !e.target.closest("dialog")) voltarCategorias(); });
 
   /* ---------- Fileira horizontal (mesmo componente para todas as áreas) ---------- */
+  /* ---------- Equipe: escolha o seu médico (cards deslizáveis) ---------- */
+  function renderEquipe() {
+    const caixa = $("#equipe-lista");
+    if (!caixa) return;
+    const areasDe = (id) => C.areas.filter((a) => a.profissionais.includes(id));
+    const ids = [C.destaque.profissional, ...Object.keys(C.profissionais).filter((id) => id !== C.destaque.profissional)];
+    const cards = ids.map((id, i) => {
+      const p = C.profissionais[id], areas = areasDe(id);
+      if (!areas.length) return "";
+      const varias = areas.length > 1;
+      const tags = areas.map((a) => `<li class="medico__tag" data-cor="${esc(a.cor)}">${esc(a.rotulo.replace(/­/g, ""))}</li>`).join("");
+      const opcoes = areas.map((a, k) => `
+        <li style="--k:${k}"><a class="medico__op" data-cor="${esc(a.cor)}" href="#" data-med="${esc(id)}" data-med-area="${esc(a.id)}" draggable="false">
+          ${icone(a.icone, "medico__op-icone")}<span><strong>${esc(a.rotulo.replace(/\u00ad/g, ""))}</strong><small>Agendar</small></span>
+          <svg class="medico__op-seta" aria-hidden="true"><use href="#i-seta"/></svg></a></li>`).join("");
+      return `
+      <article class="pro medico${i === 0 ? " medico--destaque" : ""}" style="--i:${i}" data-medico="${esc(id)}" data-varias="${varias}">
+        <div class="pro__foto">
+          <img src="${esc(p.retrato)}" alt="Foto de ${esc(p.nome)}" width="496" height="440" loading="lazy" draggable="false">
+          ${i === 0 ? `<span class="medico__selo">Responsável técnica</span>` : ""}
+        </div>
+        <div class="pro__texto">
+          <h3 class="pro__nome">${esc(p.nome)}</h3>
+          <p class="pro__desc">${descricaoHTML(p.descricao)}</p>
+          <ul class="medico__tags" aria-label="Atende em">${tags}</ul>
+        </div>
+        ${varias
+          ? `<button type="button" class="btn btn--card medico__abrir" aria-expanded="false" aria-controls="op-${esc(id)}"><span>Escolher consulta</span><span class="medico__n">${areas.length}</span></button>`
+          : `<a class="btn btn--primario btn--card" href="#" data-med="${esc(id)}" data-med-area="${esc(areas[0].id)}" draggable="false"
+               aria-label="Agendar consulta com ${esc(p.nome)} em ${esc(areas[0].titulo)}"><svg aria-hidden="true"><use href="#i-wa"/></svg><span>Agendar consulta</span></a>`}
+        ${varias ? `<div class="medico__opcoes" id="op-${esc(id)}" role="group" aria-label="Formas de consulta com ${esc(p.nome)}" hidden>
+          <div class="medico__opcoes-topo"><p>Como você quer se consultar?</p>
+            <button type="button" class="medico__fechar" aria-label="Fechar opções">×</button></div>
+          <ul>${opcoes}</ul></div>` : ""}
+      </article>`;
+    }).join("");
+    caixa.innerHTML = `
+      <div class="fileira" tabindex="0" role="group" aria-roledescription="carrossel" aria-label="Profissionais do Instituto Corujinhas">${cards}</div>
+      <div class="fileira__controles">
+        <button type="button" class="seta" data-dir="-1" aria-label="Profissionais anteriores"><svg aria-hidden="true"><use href="#i-voltar"/></svg></button>
+        <button type="button" class="seta" data-dir="1" aria-label="Próximos profissionais"><svg aria-hidden="true"><use href="#i-seta"/></svg></button>
+      </div>`;
+    $$("[data-med]", caixa).forEach((a) => {
+      const p = C.profissionais[a.dataset.med], area = C.areas.find((x) => x.id === a.dataset.medArea);
+      ligar(a, { tipo: "profissional", profissionalId: a.dataset.med, areaId: area.id, nome: p.nome, area: area.titulo });
+    });
+    const fechar = (card) => {
+      const op = $(".medico__opcoes", card); if (!op || op.hidden) return;
+      card.classList.remove("medico--aberto"); $(".medico__abrir", card).setAttribute("aria-expanded", "false");
+      setTimeout(() => { if (!card.classList.contains("medico--aberto")) op.hidden = true; }, 260);
+    };
+    const abrir = (card) => {
+      $$(".medico--aberto", caixa).forEach((c) => c !== card && fechar(c));
+      const op = $(".medico__opcoes", card); op.hidden = false; void op.offsetWidth;
+      card.classList.add("medico--aberto"); $(".medico__abrir", card).setAttribute("aria-expanded", "true");
+      setTimeout(() => $(".medico__op", op)?.focus({ preventScroll: true }), 120);
+    };
+    caixa.addEventListener("click", (e) => {
+      const card = e.target.closest(".medico");
+      if (!card || e.target.closest("[data-med]")) return; // links abrem o agendamento
+      if (e.target.closest(".medico__fechar")) { fechar(card); $(".medico__abrir", card).focus(); return; }
+      if (card.dataset.varias === "true") {
+        if (e.target.closest(".medico__opcoes")) return;
+        card.classList.contains("medico--aberto") ? fechar(card) : abrir(card);
+      }
+      else if (!e.target.closest("a, button")) $("[data-med]", card).click(); // card de uma consulta só: toque no card = agendar
+    });
+    caixa.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      const card = e.target.closest(".medico--aberto"); if (card) { e.stopPropagation(); fechar(card); $(".medico__abrir", card).focus(); }
+    });
+    configurarFileira(caixa);
+  }
+
   function configurarFileira(caixa) {
     const fileira = $(".fileira", caixa);
     const [ant, prox] = $$(".seta", caixa);
@@ -352,7 +427,7 @@
     let x0 = 0, s0 = 0, pressionado = false, arrastou = false, idP = null;
     fileira.addEventListener("pointerdown", (e) => {
       if (!ehMouse(e) || e.button !== 0 || !caixa.classList.contains("fileira-caixa--rola")) return;
-      if (e.target.closest(".pro__texto, button")) return;
+      if (e.target.closest(".pro__texto, button, .medico__opcoes")) return;
       pressionado = true; arrastou = false; idP = e.pointerId; x0 = e.clientX; s0 = fileira.scrollLeft;
     });
     fileira.addEventListener("pointermove", (e) => {
@@ -670,6 +745,7 @@
   /* ---------- Início ---------- */
   dividirTextos();
   renderCategorias();
+  renderEquipe();
   renderConvenios();
   renderAvaliacoes();
   renderUnidades();
