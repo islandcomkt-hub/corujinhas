@@ -1116,3 +1116,5 @@ html.js #equipe-lista:not(.visivel) .medico { opacity: 0; transform: translate3d
 .medico__op strong { font-size: 14px; line-height: 1.15; }
 .medico__op small { font-size: 12px; }
 @media (max-width: 600px) { .equipe .fileira__controles { display: none !important; } }
+.atalho--urgencia::after { mix-blend-mode: normal; background: conic-gradient(from var(--farol) at 50% 34%, transparent 0 62%, rgb(255 92 110 / .55) 74%, rgb(255 40 70 / .95) 82%, rgb(255 92 110 / .4) 88%, transparent 95%); filter: blur(2px); }
+.hero__atalhos .atalho--urgencia { background: linear-gradient(160deg, #C9354F, #8E1B30) !important; }
