@@ -546,8 +546,8 @@
               ${u.extra.whatsapp ? `<a class="u-mini" href="https://wa.me/${esc(u.extra.whatsapp)}?text=${encodeURIComponent(`Olá! Vim pelo site do Instituto Corujinhas e gostaria de falar sobre ${u.extra.rotulo.toLowerCase()} na unidade ${u.nome}.`)}" target="_blank" rel="noopener" aria-label="WhatsApp da ${esc(u.extra.rotulo)} ${esc(u.nome)}"><svg aria-hidden="true"><use href="#i-wa"/></svg>WhatsApp</a>` : ""}
               <a class="u-mini" href="tel:${esc(u.extra.tel)}" aria-label="Ligar para ${esc(u.extra.rotulo)} ${esc(u.nome)}"><svg aria-hidden="true"><use href="#i-tel"/></svg>Ligar</a>
             </span></div>`
-          : `<div class="unidade__acoes unidade__acoes--2">${ligarAgora(u)}${agendarAqui(u)}</div>
-          ${verMapa(u, "u-mapa-grande")}`}
+          : `<div class="unidade__fim"><div class="unidade__acoes unidade__acoes--2">${ligarAgora(u)}${agendarAqui(u)}</div>
+          ${verMapa(u, "u-mapa-grande")}</div>`}
         </div>
       </li>`).join("");
     $$("[data-agendar-unidade]").forEach((a) => ligar(a, { tipo: "geral" }));

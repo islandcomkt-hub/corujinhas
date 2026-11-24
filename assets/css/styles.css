@@ -1141,3 +1141,13 @@ html.js #equipe-lista:not(.visivel) .medico { opacity: 0; transform: translate3d
 .u-mapa-grande:hover svg { transform: translateY(-2px) scale(1.08); }
 .unidade__extra { margin-top: auto; }
 .mapa__credito { font: 600 6.5px var(--f-texto); fill: rgb(19 63 108 / .38); letter-spacing: .02em; }
+
+/* ===================== v12: unidades sem vazio entre os botões ===================== */
+/* O bloco de botões ocupa todo o espaço que sobra no cartão; os botões crescem na vertical */
+.unidade__fim { flex: 1; display: grid; grid-template-rows: minmax(54px, 1fr) minmax(64px, 1.25fr); gap: 8px; margin-top: 4px; }
+.unidade__fim .unidade__acoes--2 { margin-top: 0; height: 100%; }
+.unidade__fim .unidade__acoes--2 .u-btn { height: 100%; min-height: 54px; font-size: 14.5px; border-radius: 16px; }
+.unidade__fim .u-btn svg { width: 20px; height: 20px; }
+.unidade__fim .u-mapa-grande { margin-top: 0; height: 100%; min-height: 64px; border-radius: 18px; font-size: 16px; }
+.unidade__fim .u-mapa-grande svg { width: 23px; height: 23px; }
+.unidade__fim .u-btn { white-space: nowrap; } @media (min-width: 981px) { .unidade__fim .unidade__acoes--2 .u-btn { font-size: 13.5px; gap: 6px; padding-inline: 6px; } }
