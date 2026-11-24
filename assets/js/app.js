@@ -519,6 +519,7 @@
       <path id="${id}" class="mapa__destaque" d="${m.ruaPath}" pathLength="1"/>
       <text class="mapa__nome"><textPath href="#${id}" startOffset="50%" text-anchor="middle">${esc(m.rua)}</textPath></text>
       <circle class="mapa__carro" r="3.2" style="offset-path: path('${m.ruaPath}')"/>
+      <text class="mapa__credito" x="314" y="195" text-anchor="end">© OpenStreetMap</text>
       <g class="mapa__pin" transform="translate(160 100)">
         <ellipse class="mapa__anel" rx="16" ry="7"/><ellipse class="mapa__anel mapa__anel--2" rx="16" ry="7"/>
         <ellipse class="mapa__sombra" rx="7" ry="2.6"/>
@@ -527,6 +528,10 @@
     </svg>`;
   }
 
+  const verMapa = (u, cls) => u.mapa ? `<a class="${cls}" href="${esc(u.mapa)}" target="_blank" rel="noopener" aria-label="Ver a unidade ${esc(u.nome)} no mapa"><svg aria-hidden="true"><use href="#i-mapa"/></svg>Ver mapa</a>` : "";
+  const ligarAgora = (u) => `<a class="u-btn" href="tel:${esc(u.telefone.tel)}" aria-label="Ligar agora para a unidade ${esc(u.nome)}, ${esc(u.telefone.exibicao)}"><svg aria-hidden="true"><use href="#i-tel"/></svg>Ligar agora</a>`;
+  const agendarAqui = (u) => `<a class="u-btn u-btn--forte" href="#" data-agendar-unidade="${esc(u.id)}" data-unidade-fixa="${esc(u.id)}"><svg aria-hidden="true"><use href="#i-wa"/></svg>Agendar</a>`;
+
   function renderUnidades() {
     $("#lista-unidades").innerHTML = C.unidades.map((u, i) => `
       <li class="unidade" style="--i:${i}" data-entrada="unidade" data-cor="${esc(u.cor || "azul")}">
@@ -534,22 +539,18 @@
         <div class="unidade__corpo">
           <h3>${esc(u.nome)}</h3>
           <p class="unidade__end">${esc(u.enderecoCurto || "Endereço informado pela central")}</p>
-          <p class="unidade__hora"><svg aria-hidden="true"><use href="#i-relogio"/></svg><span>${u.horario.map(esc).join("<br>")}${u.divergencia ? " *" : ""}</span></p>
-          <div class="unidade__acoes">
-            ${u.mapa ? `<a class="u-btn" href="${esc(u.mapa)}" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="#i-mapa"/></svg>Ver mapa</a>` : ""}
-            <a class="u-btn" href="tel:${esc(u.telefone.tel)}" aria-label="Ligar agora para a unidade ${esc(u.nome)}, ${esc(u.telefone.exibicao)}"><svg aria-hidden="true"><use href="#i-tel"/></svg>Ligar agora</a>
-            <a class="u-btn u-btn--forte" href="#" data-agendar-unidade="${esc(u.id)}" data-unidade-fixa="${esc(u.id)}"><svg aria-hidden="true"><use href="#i-wa"/></svg>Agendar</a>
-          </div>
-          ${u.extra ? `<div class="unidade__extra"><p><b>${esc(u.extra.rotulo)}</b><span>${esc(u.extra.exibicao)}</span></p>
+          <p class="unidade__hora"><svg aria-hidden="true"><use href="#i-relogio"/></svg><span>${u.horario.map(esc).join("<br>")}</span></p>
+          ${u.extra ? `<div class="unidade__acoes">${verMapa(u, "u-btn")}${ligarAgora(u)}${agendarAqui(u)}</div>
+          <div class="unidade__extra"><p><b>${esc(u.extra.rotulo)}</b><span>${esc(u.extra.exibicao)}</span></p>
             <span class="unidade__extra-acoes">
               ${u.extra.whatsapp ? `<a class="u-mini" href="https://wa.me/${esc(u.extra.whatsapp)}?text=${encodeURIComponent(`Olá! Vim pelo site do Instituto Corujinhas e gostaria de falar sobre ${u.extra.rotulo.toLowerCase()} na unidade ${u.nome}.`)}" target="_blank" rel="noopener" aria-label="WhatsApp da ${esc(u.extra.rotulo)} ${esc(u.nome)}"><svg aria-hidden="true"><use href="#i-wa"/></svg>WhatsApp</a>` : ""}
               <a class="u-mini" href="tel:${esc(u.extra.tel)}" aria-label="Ligar para ${esc(u.extra.rotulo)} ${esc(u.nome)}"><svg aria-hidden="true"><use href="#i-tel"/></svg>Ligar</a>
-            </span></div>` : ""}
+            </span></div>`
+          : `<div class="unidade__acoes unidade__acoes--2">${ligarAgora(u)}${agendarAqui(u)}</div>
+          ${verMapa(u, "u-mapa-grande")}`}
         </div>
       </li>`).join("");
     $$("[data-agendar-unidade]").forEach((a) => ligar(a, { tipo: "geral" }));
-    const div = C.unidades.find((u) => u.divergencia);
-    $("#unidades-nota").innerHTML = `${div ? `* ${esc(div.nome)}: ${esc(div.divergencia)}. Confirme com a central. ` : ""}Mapas ilustrados com dados © colaboradores do <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>.`;
   }
 
   /* ---------- Textos: títulos entram palavra por palavra ---------- */
