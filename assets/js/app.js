@@ -54,6 +54,16 @@
   let pedidoAtual = null, origemAgenda = null;
   let unidadeId = ler(CHAVE_UNI, "");
 
+  // Agenda online (agenda-api.js). "whatsapp" = fluxo antigo; "online" = escolhe dia e horário; "escolher" = falta escolher o profissional.
+  const A = window.CorujinhasAgenda || { ativo: false };
+  let fluxo = "whatsapp", ag = null;
+  const profsOnline = A.ativo ? A.profissionais().then((l) => new Map(l.map((p) => [p.id, p]))).catch(() => new Map()) : Promise.resolve(null);
+  let ajustes = { duracao_min: 30, tolerancia_min: 15, horizonte_dias: 60 };
+  if (A.ativo) {
+    document.documentElement.dataset.agenda = A.modo;
+    A.ajustes().then((a) => { if (a) ajustes = { ...ajustes, ...a }; }).catch(() => {});
+  }
+
   function rotuloPedido(p) {
     if (p.tipo === "profissional") return `${p.nome} · ${p.area}`;
     if (p.tipo === "area") return p.area;
@@ -83,8 +93,17 @@
   }
   function renderPacientes() {
     const lista = $("#agenda-pacientes");
+    const online = fluxo !== "whatsapp";
     lista.innerHTML = pacientes.map((p, i) => {
       const meta = [p.tipo === "crianca" ? "Criança" : "Adulto", textoIdade(idade(p.nascimento)), p.atendimento].filter(Boolean).join(" · ");
+      if (online) return `<li style="--i:${i}">
+        <button type="button" class="paciente" data-paciente="${esc(p.id)}">
+          <span class="paciente__avatar" data-tipo="${esc(p.tipo)}" aria-hidden="true">${esc(p.nome.trim().charAt(0).toUpperCase())}</span>
+          <span class="paciente__txt"><strong>${esc(p.nome)}</strong><small>${esc(meta)}</small></span>
+          <span class="paciente__ir paciente__ir--agenda"><svg aria-hidden="true"><use href="#i-agenda"/></svg>Escolher horário</span>
+        </button>
+        <button type="button" class="paciente__remover" data-remover="${esc(p.id)}" aria-label="Remover ${esc(p.nome)} deste aparelho">×</button>
+      </li>`;
       return `<li style="--i:${i}">
         <a class="paciente" href="${esc(linkPara(p))}" target="_blank" rel="noopener noreferrer" data-paciente="${esc(p.id)}">
           <span class="paciente__avatar" data-tipo="${esc(p.tipo)}" aria-hidden="true">${esc(p.nome.trim().charAt(0).toUpperCase())}</span>
@@ -101,8 +120,10 @@
     const etapa = $(`[data-etapa="${nome}"]`, dlg);
     etapa.classList.remove("agenda__etapa--entra"); void etapa.offsetWidth; etapa.classList.add("agenda__etapa--entra");
     $("[data-voltar]", form).hidden = !pacientes.length;
-    if (nome === "cadastro") setTimeout(() => $('[name="tipo"]:checked', form)?.focus() || $('[name="tipo"]', form).focus(), 30);
-    else setTimeout(() => $(".paciente", dlg)?.focus(), 30);
+    const alvo = { cadastro: () => $('[name="tipo"]:checked', form) || $('[name="tipo"]', form), pacientes: () => $(".paciente", dlg),
+      profissional: () => $(".prof-op", dlg), horario: () => $(".ag-uni input:checked, .ag-uni input", dlg), pronto: () => $(".ag-pronto__titulo", dlg) }[nome];
+    setTimeout(() => alvo?.()?.focus({ preventScroll: nome !== "pronto" }), 30);
+    $(".agenda__caixa", dlg).scrollTop = 0;
   }
   function preencherAtendimento() {
     const conv = C.convenios.itens.filter((i) => i.categoria === "convenio"), parc = C.convenios.itens.filter((i) => i.categoria === "parceria");
@@ -111,14 +132,59 @@
       <optgroup label="Parcerias">${parc.map((i) => `<option value="${esc(i.nome)}">${esc(i.nome)}</option>`).join("")}</optgroup>
       <option value="Outro convênio (informo na conversa)">Outro convênio</option>`;
   }
-  function abrirAgenda(a, pedido, uniFixa) {
+  // Qual profissional o pedido já traz (card da equipe, área, acompanhamento adulto).
+  function profDoPedido(p) {
+    if (p.tipo === "profissional") return { id: p.profissionalId, areaId: p.areaId, area: p.area };
+    if (p.tipo === "acompanhamento_adulto") {
+      const a = C.areas.find((x) => x.id === "acompanhamento_adulto");
+      return { id: C.destaque.profissional, areaId: a?.id || "", area: a?.titulo || "" };
+    }
+    return null;
+  }
+  function aplicarFluxo() {
+    const on = fluxo !== "whatsapp";
+    $(".agenda__unidades", dlg).hidden = on;
+    $$("[data-so-online]", form).forEach((e) => (e.hidden = !on));
+    $("[data-enviar]", form).innerHTML = on
+      ? `<svg aria-hidden="true"><use href="#i-agenda"/></svg><span>Agendar agora</span>`
+      : `<svg aria-hidden="true"><use href="#i-wa"/></svg><span>Salvar e agendar consulta</span>`;
+    $("[data-priv]", dlg).textContent = on
+      ? "Os dados de identificação vão para a agenda do instituto, só para marcar e confirmar a consulta. Nada de informação clínica."
+      : "Os dados ficam só neste aparelho e vão na mensagem do WhatsApp, que você revisa antes de enviar.";
+    $$("[data-demo]").forEach((e) => (e.hidden = A.modo !== "demo"));
+  }
+  async function abrirAgenda(a, pedido, uniFixa) {
     origemAgenda = a; pedidoAtual = pedido;
     if (uniFixa !== undefined) unidadeId = uniFixa;
+    fluxo = "whatsapp"; ag = null;
+    const online = A.ativo ? await Promise.race([profsOnline, new Promise((ok) => setTimeout(() => ok(null), 2500))]) : null;
+    const alvo = profDoPedido(pedido);
+    if (online && alvo && online.has(alvo.id)) {
+      fluxo = "online";
+      ag = { prof: { id: alvo.id, nome: online.get(alvo.id).nome }, areaId: alvo.areaId, area: alvo.area, uniFixa: uniFixa || "" };
+    } else if (online && online.size && pedido.tipo === "geral") fluxo = "escolher";
     $("#agenda-contexto").textContent = rotuloPedido(pedido);
+    aplicarFluxo();
     renderUnidadesChips(); renderPacientes();
     form.reset(); atualizarTipo(); $("#agenda-erro").textContent = "";
-    if (typeof dlg.showModal === "function") dlg.showModal(); else dlg.setAttribute("open", "");
-    mostrarEtapa(pacientes.length ? "pacientes" : "cadastro");
+    if (typeof dlg.showModal === "function") { if (!dlg.open) dlg.showModal(); } else dlg.setAttribute("open", "");
+    if (fluxo === "escolher") { renderProfs(online, uniFixa || ""); mostrarEtapa("profissional"); }
+    else mostrarEtapa(pacientes.length ? "pacientes" : "cadastro");
+  }
+  function renderProfs(mapa, uniFixa) {
+    const itens = [];
+    mapa.forEach((p) => p.areas.forEach((areaId) => {
+      const area = C.areas.find((a) => a.id === areaId);
+      if (area) itens.push({ p, area });
+    }));
+    $("#agenda-profs").innerHTML = itens.map(({ p, area }, i) => {
+      const foto = C.profissionais[p.id]?.retrato;
+      return `<li style="--i:${i}"><button type="button" class="prof-op" data-prof="${esc(p.id)}" data-prof-area="${esc(area.id)}" data-uni-fixa="${esc(uniFixa)}">
+        ${foto ? `<img src="${esc(foto)}" alt="" width="48" height="48" loading="lazy">` : `<span class="paciente__avatar" aria-hidden="true">${esc(p.nome.replace(/^Dra?\.\s*/, "").charAt(0))}</span>`}
+        <span class="paciente__txt"><strong>${esc(p.nome)}</strong><small>${esc(area.rotulo.replace(/\u00ad/g, ""))}</small></span>
+        <svg class="prof-op__seta" aria-hidden="true"><use href="#i-seta"/></svg></button></li>`;
+    }).join("");
+    $("[data-central]", dlg).href = M.criarLinkGeral(uniFixa ? { unidade: C.unidades.find((u) => u.id === uniFixa)?.nome } : {});
   }
 
   // CPF: máscara e dígitos verificadores
@@ -131,6 +197,8 @@
     return dv(9) === +c[9] && dv(10) === +c[10];
   }
   form.cpf.addEventListener("input", () => { form.cpf.value = mascaraCPF(form.cpf.value); });
+  const mascaraFone = (v) => { const d = soDigitos(v).slice(0, 11); return d.length > 10 ? d.replace(/(\d{2})(\d{5})(\d{0,4})/, "($1) $2-$3") : d.replace(/(\d{2})(\d{0,4})(\d{0,4})/, (m, a, b, c) => `(${a}) ${b}${c ? "-" + c : ""}`).replace(/[\s(-]+$/, ""); };
+  form.telefone.addEventListener("input", () => { form.telefone.value = mascaraFone(form.telefone.value); });
   function atualizarTipo() {
     const crianca = form.tipo.value === "crianca";
     $("[data-so-crianca]", form).hidden = !crianca;
@@ -151,9 +219,11 @@
     const resp = f.responsavel.value.trim(); const respOk = tipo !== "crianca" || resp.split(/\s+/).length >= 2; marcar(f.responsavel, respOk);
     if (!respOk) erros.push("Informe o nome do responsável.");
     if (tipo === "crianca" && id != null && id >= 18) erros.push("Pela data de nascimento, o paciente é adulto. Confira o tipo.");
+    const tel = soDigitos(f.telefone.value); const telOk = fluxo === "whatsapp" ? !tel || tel.length >= 10 : tel.length === 10 || tel.length === 11;
+    marcar(f.telefone, telOk); if (!telOk) erros.push("Informe um WhatsApp com DDD para a confirmação.");
     $("#agenda-erro").textContent = erros[0] || "";
     if (erros.length) { $(".campo--erro input, .campo--erro select", f)?.focus(); return null; }
-    return { id: `p${Date.now().toString(36)}`, tipo, nome, nascimento: f.nascimento.value, cpf: cpf ? mascaraCPF(cpf) : "", responsavel: tipo === "crianca" ? resp : "", atendimento: f.atendimento.value };
+    return { id: `p${Date.now().toString(36)}`, tipo, nome, nascimento: f.nascimento.value, cpf: cpf ? mascaraCPF(cpf) : "", responsavel: tipo === "crianca" ? resp : "", atendimento: f.atendimento.value, telefone: tel ? mascaraFone(tel) : "" };
   }
   function abrirWhatsApp(url) {
     // abre em nova aba sem dar à página do WhatsApp acesso a esta (opener zerado);
@@ -174,12 +244,14 @@
       if (igual >= 0) pacientes[igual] = { ...registro, id: pacientes[igual].id }; else pacientes.push(registro);
       gravar(CHAVE_PAC, pacientes);
     }
+    if (fluxo !== "whatsapp") return iniciarHorario(pac);
     const url = linkPara(pac);
     M.registrarIntencao({ ...pedidoAtual, unidadeId: unidadeId || null, cadastro: true });
     abrirWhatsApp(url);
     dlg.close();
   });
   dlg.addEventListener("change", (e) => {
+    if (e.target.name === "ag-uni") return escolherUnidade(e.target.value);
     if (e.target.name !== "agenda-unidade") return;
     unidadeId = e.target.value; gravar(CHAVE_UNI, unidadeId);
     $$(".paciente", dlg).forEach((a) => { a.href = linkPara(pacientes.find((p) => p.id === a.dataset.paciente)); });
@@ -195,7 +267,38 @@
       return;
     }
     if (e.target.closest("[data-apagar]")) { pacientes = []; apagar(CHAVE_PAC); renderPacientes(); return mostrarEtapa("cadastro"); }
-    const pac = e.target.closest(".paciente");
+    // ----- agenda online -----
+    const po = e.target.closest("[data-prof]");
+    if (po) {
+      const area = C.areas.find((a) => a.id === po.dataset.profArea);
+      profsOnline.then((mapa) => {
+        const p = mapa.get(po.dataset.prof);
+        fluxo = "online"; ag = { prof: { id: p.id, nome: p.nome }, areaId: area.id, area: area.titulo, uniFixa: po.dataset.uniFixa };
+        $("#agenda-contexto").textContent = `${p.nome} · ${area.titulo}`;
+        aplicarFluxo(); renderPacientes(); mostrarEtapa(pacientes.length ? "pacientes" : "cadastro");
+      });
+      return;
+    }
+    const pb = e.target.closest("button.paciente");
+    if (pb) {
+      const p = pacientes.find((x) => x.id === pb.dataset.paciente);
+      if (!p.telefone) { // cadastro antigo, sem WhatsApp: completa antes
+        form.reset();
+        form.tipo.value = p.tipo; atualizarTipo();
+        ["nome", "nascimento", "cpf", "responsavel", "atendimento"].forEach((k) => { if (p[k]) form[k].value = p[k]; });
+        mostrarEtapa("cadastro"); setTimeout(() => form.telefone.focus(), 60);
+        $("#agenda-erro").textContent = "Falta só o WhatsApp para a confirmação.";
+        return;
+      }
+      return iniciarHorario(p);
+    }
+    if (e.target.closest("[data-ag-voltar]")) return mostrarEtapa(pacientes.length ? "pacientes" : "cadastro");
+    if (e.target.closest("[data-ag-confirmar]")) return confirmarHorario();
+    const mes = e.target.closest("[data-mes]"); if (mes) return mudarMes(+mes.dataset.mes);
+    const dia = e.target.closest("[data-dia]"); if (dia) return escolherDia(dia.dataset.dia);
+    const hora = e.target.closest("[data-hora]"); if (hora) return escolherHora(hora.dataset.hora);
+    if (e.target.closest("[data-abrir-meus]")) { dlg.close(); return abrirMeus(); }
+    const pac = e.target.closest("a.paciente");
     if (pac) {
       M.registrarIntencao({ ...pedidoAtual, unidadeId: unidadeId || null, pacienteSalvo: true });
       setTimeout(() => dlg.close(), 80);
@@ -204,10 +307,251 @@
   dlg.addEventListener("close", () => origemAgenda?.focus({ preventScroll: true }));
   preencherAtendimento();
 
+  /* ---------- Agenda online: unidade → dia → horário → confirmar ---------- */
+  const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+  const DSEM = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+  const somaMin = (h, m) => { const [a, b] = h.split(":").map(Number), t = a * 60 + b + m; return `${String(Math.floor(t / 60) % 24).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`; };
+  const listaDias = (dias) => { const n = dias.map((d) => DSEM[d]); return n.length > 1 ? `${n.slice(0, -1).join(", ")} e ${n.at(-1)}` : n[0] || ""; };
+  const dataExtenso = (iso) => { const [a, m, d] = iso.split("-").map(Number); return `${M.util.DIAS[A.util.diaSemana(iso)]}, ${d} de ${MESES[m - 1]}`; };
+  const agErro = (t) => { $("#ag-erro").textContent = t || ""; };
+  let carga = 0;
+
+  function renderQuem() {
+    const p = ag.paciente;
+    $("#ag-quem").innerHTML = `
+      <span class="paciente__avatar" data-tipo="${esc(p.tipo)}" aria-hidden="true">${esc(p.nome.trim().charAt(0).toUpperCase())}</span>
+      <span class="ag__quem-txt"><strong>${esc(p.nome)}</strong><small>com ${esc(ag.prof.nome)} · ${esc(ag.area)}</small></span>`;
+  }
+  async function iniciarHorario(pac) {
+    ag.paciente = pac; ag.unidade = null; ag.dia = null; ag.hora = null; ag.unis = [];
+    renderQuem(); agErro("");
+    $("[data-ag-cal]", dlg).hidden = true; $("[data-ag-horas]", dlg).hidden = true; $("#ag-resumo").hidden = true;
+    $("[data-ag-confirmar]", dlg).disabled = true;
+    $("#ag-unidades").innerHTML = `<p class="ag__carregando">Carregando a agenda…</p>`;
+    mostrarEtapa("horario");
+    try {
+      const unis = await A.unidades(ag.prof.id);
+      ag.unis = unis;
+      if (!unis.length) {
+        $("#ag-unidades").innerHTML = `<p class="ag__vazio">A agenda online deste profissional ainda não foi liberada.
+          <a href="${esc(M.encaminharPedido({ ...pedidoAtual, paciente: pac }))}" target="_blank" rel="noopener noreferrer">Agendar pela central</a></p>`;
+        return;
+      }
+      $("#ag-unidades").innerHTML = unis.map((u, i) => `
+        <label class="ag-uni" style="--i:${i}" data-cor="${esc(C.unidades.find((x) => x.id === u.unidade_id)?.cor || "neutro")}">
+          <input type="radio" name="ag-uni" value="${esc(u.unidade_id)}">
+          <span><strong>${esc(u.nome)}</strong><small>${esc(listaDias(u.dias))}</small></span>
+        </label>`).join("");
+      const pref = [ag.uniFixa, unidadeId].find((id) => id && unis.some((u) => u.unidade_id === id)) || (unis.length === 1 ? unis[0].unidade_id : "");
+      if (pref) escolherUnidade(pref);
+      setTimeout(() => $(".ag-uni input:checked, .ag-uni input", dlg)?.focus({ preventScroll: true }), 40);
+    } catch (e) { $("#ag-unidades").innerHTML = ""; agErro(A.mensagemErro(e)); }
+  }
+  function escolherUnidade(id) {
+    ag.unidade = id; ag.dia = null; ag.hora = null;
+    const r = $(`.ag-uni input[value="${CSS.escape(id)}"]`, dlg); if (r) r.checked = true;
+    unidadeId = id; gravar(CHAVE_UNI, unidadeId);
+    $("[data-ag-cal]", dlg).hidden = false; $("[data-ag-horas]", dlg).hidden = true; $("#ag-resumo").hidden = true;
+    $("[data-ag-confirmar]", dlg).disabled = true; agErro("");
+    ag.mes = A.util.hojeSP().slice(0, 7);
+    carregarMes(true);
+  }
+  const limiteAgenda = () => A.util.somaDias(A.util.hojeSP(), ajustes.horizonte_dias);
+  const proxMes = (ym, n) => { let [a, m] = ym.split("-").map(Number); m += n; if (m > 12) { m = 1; a++; } if (m < 1) { m = 12; a--; } return `${a}-${String(m).padStart(2, "0")}`; };
+  const fimDoMes = (ym) => { const [a, m] = ym.split("-").map(Number); return `${ym}-${String(new Date(Date.UTC(a, m, 0)).getUTCDate()).padStart(2, "0")}`; };
+  function mudarMes(n) { ag.mes = proxMes(ag.mes, n); carregarMes(false); }
+  async function carregarMes(auto) {
+    const minha = ++carga, hoje = A.util.hojeSP(), lim = limiteAgenda();
+    const de = `${ag.mes}-01` < hoje ? hoje : `${ag.mes}-01`, ate = fimDoMes(ag.mes) > lim ? lim : fimDoMes(ag.mes);
+    renderCal(null);
+    let dias = [];
+    try { if (de <= ate) dias = await A.dias(ag.prof.id, ag.unidade, de, ate); }
+    catch (e) { agErro(A.mensagemErro(e)); }
+    if (minha !== carga) return;
+    if (auto && !dias.some((d) => d.livres > 0) && `${proxMes(ag.mes, 1)}-01` <= lim) { ag.mes = proxMes(ag.mes, 1); return carregarMes(false); }
+    renderCal(dias);
+  }
+  function renderCal(dias) {
+    const [a, m] = ag.mes.split("-").map(Number), hoje = A.util.hojeSP(), lim = limiteAgenda();
+    $("#ag-mes").textContent = `${MESES[m - 1].charAt(0).toUpperCase()}${MESES[m - 1].slice(1)} de ${a}`;
+    $('[data-mes="-1"]', dlg).disabled = ag.mes <= hoje.slice(0, 7);
+    $('[data-mes="1"]', dlg).disabled = `${proxMes(ag.mes, 1)}-01` > lim;
+    const mapa = new Map((dias || []).map((d) => [typeof d.data === "string" ? d.data.slice(0, 10) : d.data, d.livres]));
+    const total = Number(fimDoMes(ag.mes).slice(8)), vazio = A.util.diaSemana(`${ag.mes}-01`);
+    let html = "<span></span>".repeat(vazio);
+    for (let d = 1; d <= total; d++) {
+      const iso = `${ag.mes}-${String(d).padStart(2, "0")}`, livres = mapa.get(iso);
+      const hojeCls = iso === hoje ? " ag-dia--hoje" : "";
+      if (!dias) html += `<span class="ag-dia ag-dia--carrega${hojeCls}">${d}</span>`;
+      else if (livres > 0) html += `<button type="button" class="ag-dia ag-dia--livre${hojeCls}${iso === ag.dia ? " ag-dia--sel" : ""}" data-dia="${iso}" aria-pressed="${iso === ag.dia}"
+          aria-label="${esc(dataExtenso(iso))}, ${livres} ${livres === 1 ? "horário" : "horários"}">${d}<i aria-hidden="true"></i></button>`;
+      else if (livres === 0 && iso >= hoje) html += `<span class="ag-dia ag-dia--lotado${hojeCls}" title="Sem horários">${d}</span>`;
+      else html += `<span class="ag-dia ag-dia--fora${hojeCls}">${d}</span>`;
+    }
+    $("#ag-cal").innerHTML = html;
+    if (dias && !dias.some((x) => x.livres > 0)) $("#ag-cal").insertAdjacentHTML("beforeend", `<p class="ag__semvaga">Sem horários livres neste mês nesta unidade.</p>`);
+  }
+  async function escolherDia(iso) {
+    ag.dia = iso; ag.hora = null; agErro("");
+    $$(".ag-dia--livre", dlg).forEach((b) => { const on = b.dataset.dia === iso; b.classList.toggle("ag-dia--sel", on); b.setAttribute("aria-pressed", on); });
+    const bloco = $("[data-ag-horas]", dlg); bloco.hidden = false;
+    $("#ag-resumo").hidden = true; $("[data-ag-confirmar]", dlg).disabled = true;
+    $("#ag-dia-rot").textContent = `3. Horário · ${dataExtenso(iso)}`;
+    $("#ag-horas").innerHTML = `<p class="ag__carregando">Buscando horários…</p>`;
+    $("#ag-nota").textContent = `Cada consulta dura cerca de ${ajustes.duracao_min} min. O horário pode atrasar até ${ajustes.tolerancia_min} min.`;
+    const minha = ++carga;
+    let horas = [];
+    try { horas = await A.horarios(ag.prof.id, ag.unidade, iso); } catch (e) { agErro(A.mensagemErro(e)); }
+    if (minha !== carga) return;
+    if (!horas.length) { $("#ag-horas").innerHTML = `<p class="ag__vazio">Os horários deste dia acabaram de ser preenchidos. Escolha outro dia.</p>`; return; }
+    const grupos = [["Manhã", (h) => h < "12:00"], ["Tarde", (h) => h >= "12:00" && h < "18:00"], ["Noite", (h) => h >= "18:00"]];
+    $("#ag-horas").innerHTML = grupos.map(([nome, f]) => {
+      const hs = horas.filter(f); if (!hs.length) return "";
+      return `<div class="ag__grupo"><span class="ag__grupo-nome">${nome}</span><div class="ag__lista">${hs.map((h, i) => `
+        <button type="button" class="ag-hora" style="--i:${i}" data-hora="${h}" aria-pressed="false" aria-label="${h}, pode atrasar até ${somaMin(h, ajustes.tolerancia_min)}">
+          <strong>${h}</strong><small>até ${somaMin(h, ajustes.tolerancia_min)}</small></button>`).join("")}</div></div>`;
+    }).join("");
+    if (!movimentoReduzido.matches) bloco.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+  function escolherHora(h) {
+    ag.hora = h; agErro("");
+    $$(".ag-hora", dlg).forEach((b) => { const on = b.dataset.hora === h; b.classList.toggle("ag-hora--sel", on); b.setAttribute("aria-pressed", on); });
+    const u = ag.unis.find((x) => x.unidade_id === ag.unidade), uc = C.unidades.find((x) => x.id === ag.unidade);
+    const res = $("#ag-resumo");
+    res.innerHTML = `
+      <p class="ag__resumo-quando"><strong>${esc(dataExtenso(ag.dia))}</strong><span>${esc(h)}</span></p>
+      <ul>
+        <li><span>Paciente</span>${esc(ag.paciente.nome)}</li>
+        <li><span>Profissional</span>${esc(ag.prof.nome)} · ${esc(ag.area)}</li>
+        <li><span>Unidade</span>${esc(u.nome)}${uc?.enderecoCurto ? ` — ${esc(uc.enderecoCurto)}` : ""}</li>
+      </ul>
+      <p class="ag__tolerancia">O atendimento começa às ${esc(h)} e pode atrasar até ${esc(somaMin(h, ajustes.tolerancia_min))}.</p>`;
+    res.hidden = false; res.classList.remove("ag__resumo--entra"); void res.offsetWidth; res.classList.add("ag__resumo--entra");
+    $("[data-ag-confirmar]", dlg).disabled = false;
+    if (!movimentoReduzido.matches) res.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+  async function confirmarHorario() {
+    if (!ag?.hora) return;
+    const btn = $("[data-ag-confirmar]", dlg), p = ag.paciente, u = ag.unis.find((x) => x.unidade_id === ag.unidade);
+    btn.disabled = true; btn.classList.add("btn--carregando"); agErro("");
+    try {
+      const r = await A.criar({
+        profissional_id: ag.prof.id, area_id: ag.areaId, area: ag.area, unidade_id: ag.unidade, data: ag.dia, hora: ag.hora,
+        paciente_nome: p.nome, paciente_tipo: p.tipo, nascimento: p.nascimento, cpf: p.cpf || "", responsavel: p.responsavel || "",
+        telefone: p.telefone, atendimento: p.atendimento || "Particular"
+      });
+      const info = { codigo: r.codigo, profissional: ag.prof.nome, area: ag.area, unidade: u.nome, data: ag.dia, hora: ag.hora, paciente: { ...p } };
+      salvarMeu({ codigo: r.codigo, nascimento: p.nascimento, paciente: p.nome, profissional: ag.prof.nome, area: ag.area, unidade: u.nome, data: ag.dia, hora: ag.hora, status: r.status || "solicitado" });
+      let url = M.criarLinkAgendamento(info);
+      if (A.modo === "demo") url = url.replace("text=", "text=" + encodeURIComponent("[TESTE DA AGENDA ONLINE — DESCONSIDERAR] "));
+      M.registrarIntencao({ ...pedidoAtual, unidadeId: ag.unidade, agendaOnline: true });
+      mostrarPronto(info, url);
+      const w = window.open(url, "_blank"); if (w) { try { w.opener = null; } catch { /* */ } }
+    } catch (e) {
+      agErro(A.mensagemErro(e));
+      if (e.codigo === "HORARIO_INDISPONIVEL") { escolherDia(ag.dia); carregarMes(false); }
+    } finally { btn.classList.remove("btn--carregando"); btn.disabled = !ag?.hora; }
+  }
+  function mostrarPronto(info, url) {
+    $("#ag-codigo").textContent = info.codigo;
+    $("#ag-pronto-info").innerHTML = `
+      <li><span>Paciente</span>${esc(info.paciente.nome)}</li>
+      <li><span>Quando</span>${esc(dataExtenso(info.data))} às ${esc(info.hora)}</li>
+      <li><span>Com</span>${esc(info.profissional)} · ${esc(info.area)}</li>
+      <li><span>Onde</span>Unidade ${esc(info.unidade)}</li>
+      <li><span>Situação</span>Aguardando confirmação da central</li>`;
+    $("#ag-pronto-wa").href = url;
+    ag.hora = null;
+    mostrarEtapa("pronto");
+  }
+
+  /* ---------- Meus agendamentos (guardados neste aparelho: código + nascimento) ---------- */
+  const CHAVE_AG = "corujinhas-agendamentos-v1";
+  const ROTULO_STATUS = { solicitado: "Aguardando confirmação", confirmado: "Confirmado", realizado: "Realizado", faltou: "Não compareceu", cancelado_paciente: "Cancelado por você", cancelado_equipe: "Cancelado pela clínica" };
+  let meus = ler(CHAVE_AG, []);
+  if (!Array.isArray(meus)) meus = [];
+  meus = meus.filter((m) => m && m.codigo && m.data && m.data >= A.util?.somaDias?.(A.util.hojeSP(), -30));
+  const dlgMeus = $("#meus");
+  function salvarMeu(r) { meus = [r, ...meus.filter((m) => m.codigo !== r.codigo)].slice(0, 20); gravar(CHAVE_AG, meus); }
+  const podeCancelar = (m) => (m.status === "solicitado" || m.status === "confirmado") && `${m.data}T${m.hora}` > A.util.agoraSP();
+  function renderMeus() {
+    const ord = [...meus].sort((x, y) => (podeCancelar(y) - podeCancelar(x)) || (x.data + x.hora).localeCompare(y.data + y.hora));
+    $("#meus-vazio").hidden = !!ord.length;
+    $("#meus-lista").innerHTML = ord.map((m, i) => {
+      const [, mm, dd] = m.data.split("-");
+      return `<li class="meu" style="--i:${i}" data-st="${esc(m.status)}" data-codigo="${esc(m.codigo)}">
+        <div class="meu__topo">
+          <span class="meu__data" aria-hidden="true"><b>${dd}</b><small>${MESES[+mm - 1].slice(0, 3)}</small></span>
+          <span class="meu__txt"><strong>${esc(m.paciente.split(" ")[0])} · ${esc(m.profissional)}</strong>
+            <small>${esc(dataExtenso(m.data))} às ${esc(m.hora)} · ${esc(m.unidade)}</small></span>
+          <span class="meu__st">${esc(ROTULO_STATUS[m.status] || m.status)}</span>
+        </div>
+        <div class="meu__det" hidden><p><span>Código</span>${esc(m.codigo)}</p>${m.area ? `<p><span>Atendimento</span>${esc(m.area)}</p>` : ""}${m.endereco ? `<p><span>Endereço</span>${esc(m.endereco)}</p>` : ""}</div>
+        <div class="meu__conf" hidden><p>Cancelar a consulta de ${esc(m.paciente.split(" ")[0])} em ${esc(dataExtenso(m.data))} às ${esc(m.hora)}?</p>
+          <div><button type="button" class="btn btn--suave" data-manter>Manter</button><button type="button" class="btn btn--perigo" data-sim>Sim, cancelar</button></div></div>
+        <div class="meu__acoes">
+          <button type="button" class="meu__btn" data-det aria-expanded="false">Ver detalhes</button>
+          ${podeCancelar(m) ? `<button type="button" class="meu__btn meu__btn--cancelar" data-cancelar>Cancelar agendamento</button>`
+            : `<button type="button" class="meu__btn" data-tirar>Remover da lista</button>`}
+        </div>
+      </li>`;
+    }).join("");
+  }
+  async function atualizarMeus() {
+    await Promise.all(meus.map(async (m) => {
+      try { const r = await A.consultar(m.codigo, m.nascimento); if (r) Object.assign(m, { status: r.status, data: String(r.data).slice(0, 10), hora: r.hora, unidade: r.unidade, endereco: r.endereco, profissional: r.profissional, area: r.area }); }
+      catch { /* mantém o que está salvo */ }
+    }));
+    gravar(CHAVE_AG, meus);
+  }
+  async function abrirMeus() {
+    $$("[data-demo]").forEach((e) => (e.hidden = A.modo !== "demo"));
+    renderMeus();
+    if (typeof dlgMeus.showModal === "function") { if (!dlgMeus.open) dlgMeus.showModal(); } else dlgMeus.setAttribute("open", "");
+    if (!meus.length) dlgMeus.querySelector(".meus__buscar").open = true;
+    await atualizarMeus(); renderMeus();
+  }
+  dlgMeus.addEventListener("click", async (e) => {
+    if (e.target === dlgMeus || e.target.closest("[data-fechar]")) return dlgMeus.close();
+    const li = e.target.closest(".meu"); if (!li) return;
+    const m = meus.find((x) => x.codigo === li.dataset.codigo);
+    if (e.target.closest("[data-det]")) { const d = $(".meu__det", li), b = e.target.closest("[data-det]"); d.hidden = !d.hidden; b.setAttribute("aria-expanded", !d.hidden); b.textContent = d.hidden ? "Ver detalhes" : "Ocultar detalhes"; return; }
+    if (e.target.closest("[data-cancelar]")) { $(".meu__conf", li).hidden = false; $(".meu__acoes", li).hidden = true; $("[data-manter]", li).focus(); return; }
+    if (e.target.closest("[data-manter]")) { $(".meu__conf", li).hidden = true; $(".meu__acoes", li).hidden = false; return; }
+    if (e.target.closest("[data-tirar]")) { meus = meus.filter((x) => x !== m); gravar(CHAVE_AG, meus); return renderMeus(); }
+    const sim = e.target.closest("[data-sim]");
+    if (sim) {
+      sim.disabled = true; sim.textContent = "Cancelando…";
+      try {
+        const r = await A.cancelar(m.codigo, m.nascimento);
+        Object.assign(m, { status: r?.status || "cancelado_paciente" }); gravar(CHAVE_AG, meus);
+        let url = M.criarLinkCancelamento({ ...m, paciente: m.paciente.split(" ")[0] });
+        if (A.modo === "demo") url = url.replace("text=", "text=" + encodeURIComponent("[TESTE DA AGENDA ONLINE — DESCONSIDERAR] "));
+        renderMeus();
+        const aviso = $("#aviso-wa"); aviso.textContent = "Agendamento cancelado. Avisando a central pelo WhatsApp…";
+        aviso.classList.add("aviso-wa--on"); setTimeout(() => aviso.classList.remove("aviso-wa--on"), 3600);
+        const w = window.open(url, "_blank"); if (w) { try { w.opener = null; } catch { /* */ } }
+      } catch (err) { sim.disabled = false; sim.textContent = "Sim, cancelar"; $(".meu__conf p", li).textContent = A.mensagemErro(err); }
+    }
+  });
+  $("#meus-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const f = e.target, cod = f.codigo.value.trim().toUpperCase().replace(/^CJ-?/, "CJ-"), nasc = f.nascimento.value;
+    if (!/^CJ-[A-Z2-9]{6}$/.test(cod) || !nasc) { $("#meus-erro").textContent = "Informe o código (CJ-XXXXXX) e a data de nascimento."; return; }
+    $("#meus-erro").textContent = "";
+    try {
+      const r = await A.consultar(cod, nasc);
+      if (!r) { $("#meus-erro").textContent = "Não encontramos esse agendamento. Confira o código e a data."; return; }
+      salvarMeu({ codigo: r.codigo, nascimento: nasc, paciente: r.paciente, profissional: r.profissional, area: r.area, unidade: r.unidade, endereco: r.endereco, data: String(r.data).slice(0, 10), hora: r.hora, status: r.status });
+      f.reset(); f.closest("details").open = false; renderMeus();
+    } catch (err) { $("#meus-erro").textContent = A.mensagemErro(err); }
+  });
+  if (A.ativo) $$("[data-abrir-meus]").forEach((b) => { b.hidden = false; if (!dlg.contains(b)) b.addEventListener("click", abrirMeus); });
+
   // Rodapé: apagar tudo o que o site guardou neste aparelho
   const botaoApagar = $("#apagar-dados");
   if (botaoApagar) botaoApagar.addEventListener("click", () => {
-    pacientes = []; unidadeId = "";
+    pacientes = []; unidadeId = ""; meus = [];
     try { Object.keys(localStorage).filter((k) => k.startsWith("corujinhas-")).forEach((k) => localStorage.removeItem(k)); } catch { /* sem armazenamento */ }
     try { Object.keys(sessionStorage).filter((k) => k.startsWith("corujinhas-") && k !== "corujinhas-abertura").forEach((k) => sessionStorage.removeItem(k)); } catch { /* sem armazenamento */ }
     $("#apagar-status").textContent = "Pronto. Nenhum dado do agendamento ficou salvo neste aparelho.";

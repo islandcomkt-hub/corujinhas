@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Painel de agendamentos · Instituto Corujinhas</title>
+<meta name="theme-color" content="#133F6C">
+<link rel="icon" href="/assets/marca/favicon-64.png">
+<link rel="stylesheet" href="/assets/css/styles.css?v=d898a43ce6">
+<link rel="stylesheet" href="/assets/css/painel.css?v=fcea6c8750">
+</head>
+<body class="pn-corpo">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="p-agenda" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="p-sirene" viewBox="0 0 24 24"><path d="M6 18v-5a6 6 0 0 1 12 0v5M4 18h16v2.5H4zM12 3v2M4.2 6.2l1.4 1.4M19.8 6.2l-1.4 1.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="p-x" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 9l6 6M15 9l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="p-escala" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="p-busca" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15 15l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="p-wa" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.2a9.7 9.7 0 0 0-8.3 14.8L2.4 21.7l4.8-1.3A9.7 9.7 0 1 0 12 2.2Zm0 17.7a8 8 0 0 1-4.1-1.1l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 1 1 12 19.9Zm4.4-6c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.5.1l-.8.9c-.1.2-.3.2-.5.1a6.6 6.6 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.5-.4h-.5a.9.9 0 0 0-.7.3 2.8 2.8 0 0 0-.9 2.1 4.9 4.9 0 0 0 1 2.6 11.2 11.2 0 0 0 4.3 3.8c1.6.7 2.2.7 3 .6a2.6 2.6 0 0 0 1.7-1.2 2.1 2.1 0 0 0 .1-1.2c0-.2-.2-.2-.5-.4Z"/></symbol>
+    <symbol id="p-mais" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+    <symbol id="p-sair" viewBox="0 0 24 24"><path d="M14 4h4.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H14M10 8l-4 4 4 4M6 12h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<!-- LOGIN -->
+<main class="pn-login" id="tela-login" hidden>
+  <form class="pn-login__caixa" id="form-login" novalidate>
+    <img src="/assets/marca/logo-horizontal-420.webp" width="420" height="136" alt="Corujinhas — Instituto de Saúde">
+    <h1>Painel de agendamentos</h1>
+    <p class="pn-login__sub">Acesso restrito à equipe do instituto.</p>
+    <p class="agenda__demo" data-demo hidden>Modo demonstração: os dados ficam só neste navegador.</p>
+    <label class="campo" data-so-banco><span>E-mail</span><input name="email" type="email" autocomplete="username" required></label>
+    <label class="campo" data-so-banco><span>Senha</span><input name="senha" type="password" autocomplete="current-password" required></label>
+    <p class="agenda__erro" id="login-erro" role="alert"></p>
+    <button type="submit" class="btn btn--primario btn--grande">Entrar</button>
+  </form>
+</main>
+
+<!-- APLICATIVO -->
+<div class="pn" id="tela-app" hidden>
+  <aside class="pn-menu">
+    <img class="pn-menu__logo" src="/assets/marca/logo-horizontal-420.webp" width="420" height="136" alt="Corujinhas">
+    <nav class="pn-menu__nav" aria-label="Seções do painel">
+      <button type="button" class="pn-aba" data-aba="agenda" aria-current="page"><svg aria-hidden="true"><use href="#p-agenda"/></svg><span>Agenda</span></button>
+      <button type="button" class="pn-aba pn-aba--urg" data-aba="urgencia"><svg aria-hidden="true"><use href="#p-sirene"/></svg><span>Urgência</span><b class="pn-aba__n" id="n-urg" hidden></b></button>
+      <button type="button" class="pn-aba" data-aba="cancelados"><svg aria-hidden="true"><use href="#p-x"/></svg><span>Cancelados</span><b class="pn-aba__n" id="n-canc" hidden></b></button>
+      <button type="button" class="pn-aba" data-aba="escalas"><svg aria-hidden="true"><use href="#p-escala"/></svg><span>Escalas</span></button>
+    </nav>
+    <div class="pn-menu__pe">
+      <p class="pn-menu__quem" id="quem"></p>
+      <button type="button" class="pn-menu__sair" id="sair"><svg aria-hidden="true"><use href="#p-sair"/></svg>Sair</button>
+    </div>
+  </aside>
+
+  <main class="pn-main">
+    <header class="pn-topo">
+      <form class="pn-busca" id="form-busca" role="search">
+        <svg aria-hidden="true"><use href="#p-busca"/></svg>
+        <input id="busca" type="search" placeholder="Código (CJ-…), nome, CPF ou WhatsApp" autocomplete="off" aria-label="Buscar agendamento">
+      </form>
+      <button type="button" class="btn btn--primario" id="novo"><svg aria-hidden="true"><use href="#p-mais"/></svg><span>Nova consulta</span></button>
+    </header>
+    <p class="agenda__demo pn-demo" data-demo hidden>Demonstração: os agendamentos de teste feitos no site (com ?demo) aparecem aqui. <button type="button" id="reiniciar-demo">Recomeçar demonstração</button></p>
+
+    <!-- AGENDA -->
+    <section class="pn-sec" data-sec="agenda">
+      <div class="pn-barra">
+        <div class="pn-seg" role="group" aria-label="Visualização">
+          <button type="button" data-vista="dia" aria-pressed="true">Dia</button>
+          <button type="button" data-vista="semana" aria-pressed="false">Semana</button>
+          <button type="button" data-vista="mes" aria-pressed="false">Mês</button>
+        </div>
+        <div class="pn-datas">
+          <button type="button" class="ag__seta" data-passo="-1" aria-label="Anterior">‹</button>
+          <button type="button" class="pn-hoje" data-hoje>Hoje</button>
+          <button type="button" class="ag__seta" data-passo="1" aria-label="Próximo">›</button>
+          <strong id="periodo" aria-live="polite"></strong>
+        </div>
+      </div>
+      <div class="pn-filtros">
+        <label><span>Profissional</span><select id="f-prof"></select></label>
+        <label><span>Tipo de consulta</span><select id="f-area"></select></label>
+        <label><span>Unidade</span><select id="f-uni"></select></label>
+        <label><span>Situação</span><select id="f-st">
+          <option value="ativos">Ativos (aguardando + confirmados)</option>
+          <option value="solicitado">Aguardando confirmação</option>
+          <option value="confirmado">Confirmados</option>
+          <option value="realizado">Realizados</option>
+          <option value="faltou">Faltas</option>
+          <option value="cancelados">Cancelados</option>
+          <option value="todos">Todos</option>
+        </select></label>
+      </div>
+      <div class="pn-contadores" id="contadores"></div>
+      <div id="vista" class="pn-vista" aria-live="polite"></div>
+    </section>
+
+    <!-- URGÊNCIA -->
+    <section class="pn-sec" data-sec="urgencia" hidden>
+      <div class="pn-titulo-sec pn-titulo-sec--urg">
+        <span class="sirene" aria-hidden="true"><svg><use href="#p-sirene"/></svg></span>
+        <div><h2>Consultas de urgência</h2><p>Hoje e próximos dias. Marque "urgência" em qualquer consulta para ela aparecer aqui.</p></div>
+        <button type="button" class="btn btn--urg" id="novo-urg"><svg aria-hidden="true"><use href="#p-mais"/></svg><span>Encaixe de urgência</span></button>
+      </div>
+      <div id="lista-urg" class="pn-lista"></div>
+    </section>
+
+    <!-- CANCELADOS -->
+    <section class="pn-sec" data-sec="cancelados" hidden>
+      <div class="pn-titulo-sec"><div><h2>Cancelamentos</h2><p>Vagas liberadas. Ofereça o horário para quem já tem consulta marcada com o mesmo profissional e tipo de consulta.</p></div></div>
+      <div id="lista-canc" class="pn-lista"></div>
+    </section>
+
+    <!-- ESCALAS -->
+    <section class="pn-sec" data-sec="escalas" hidden>
+      <div class="pn-titulo-sec"><div><h2>Escalas dos profissionais</h2><p>Em quais dias e horários cada profissional atende em cada unidade. O site só oferece os horários livres dentro destas faixas.</p></div></div>
+      <div class="pn-escalas">
+        <div class="pn-profs">
+          <ul id="lista-profs"></ul>
+          <button type="button" class="agenda__novo" id="add-prof"><span aria-hidden="true">+</span>Adicionar profissional</button>
+        </div>
+        <div class="pn-escala" id="escala"></div>
+      </div>
+      <details class="pn-ajustes">
+        <summary>Regras gerais da agenda</summary>
+        <form id="form-ajustes" class="pn-ajustes__form">
+          <label class="campo"><span>Duração da consulta (min)</span><input name="duracao_min" type="number" min="10" max="120" step="5"></label>
+          <label class="campo"><span>Atraso possível avisado (min)</span><input name="tolerancia_min" type="number" min="0" max="60" step="5"></label>
+          <label class="campo"><span>Antecedência mínima (min)</span><input name="antecedencia_min" type="number" min="0" max="1440" step="15"></label>
+          <label class="campo"><span>Agenda aberta por (dias)</span><input name="horizonte_dias" type="number" min="7" max="180"></label>
+          <button type="submit" class="btn btn--suave">Salvar regras</button>
+        </form>
+      </details>
+    </section>
+  </main>
+</div>
+
+<!-- DETALHE DO AGENDAMENTO -->
+<dialog class="pn-gaveta" id="detalhe" aria-labelledby="det-titulo">
+  <div class="pn-gaveta__caixa" id="det-corpo"></div>
+</dialog>
+
+<!-- NOVA CONSULTA / PROFISSIONAL -->
+<dialog class="pn-gaveta" id="formulario" aria-labelledby="form-titulo">
+  <div class="pn-gaveta__caixa" id="form-corpo"></div>
+</dialog>
+
+<p class="aviso-wa" id="aviso" role="status" aria-live="polite"></p>
+
+<script src="/assets/js/config.js?v=9aeda51dcc"></script>
+<script src="/assets/js/agenda-config.js?v=c4bf2b0103"></script>
+<script src="/assets/js/agenda-api.js?v=1a5bac55c9"></script>
+<script src="/assets/js/mensagens.js?v=b241b64dfb"></script>
+<script src="/assets/js/painel.js?v=4c21125e7c"></script>
+</body>
+</html>

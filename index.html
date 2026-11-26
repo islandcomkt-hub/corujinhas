@@ -24,7 +24,7 @@
 <link rel="preload" as="image" href="assets/equipe/sheila-destaque.webp">
 <link rel="preload" as="font" type="font/woff2" href="assets/fontes/nunito-latin-800-normal.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="assets/fontes/figtree-latin-400-normal.woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/styles.css?v=7000e962c2">
+<link rel="stylesheet" href="assets/css/styles.css?v=d898a43ce6">
 <script src="assets/js/inicio.js?v=c0e9e4df15"></script>
 </head>
 <body>
@@ -82,6 +82,7 @@
       <a href="#convenios">Convênios</a>
       <a href="#unidades">Unidades</a>
     </nav>
+    <button type="button" class="topo__meus" data-abrir-meus hidden aria-label="Meus agendamentos"><svg aria-hidden="true"><use href="#i-agenda"/></svg><span>Meus agendamentos</span></button>
     <a class="btn btn--primario btn--compacto" data-link-geral href="https://wa.me/553123000757">
       <svg aria-hidden="true"><use href="#i-wa"/></svg><span>Agendar</span>
     </a>
@@ -383,6 +384,14 @@
       <div class="agenda__chips" id="agenda-unidades"></div>
     </fieldset>
 
+    <p class="agenda__demo" data-demo hidden>Demonstração: nenhum horário é reservado de verdade.</p>
+
+    <section class="agenda__etapa" data-etapa="profissional" hidden>
+      <p class="agenda__rotulo" id="agenda-prof-rot">Com quem você quer consultar?</p>
+      <ul class="agenda__profs" id="agenda-profs" aria-labelledby="agenda-prof-rot"></ul>
+      <a class="agenda__central" data-central href="https://wa.me/553123000757" target="_blank" rel="noopener noreferrer"><svg aria-hidden="true"><use href="#i-wa"/></svg>Prefiro falar com a central</a>
+    </section>
+
     <section class="agenda__etapa" data-etapa="pacientes" hidden>
       <p class="agenda__rotulo" id="agenda-para">Agendar para</p>
       <ul class="agenda__pacientes" id="agenda-pacientes" aria-labelledby="agenda-para"></ul>
@@ -401,23 +410,93 @@
         <label class="campo"><span>CPF do paciente <em data-cpf-opcional hidden>(se tiver)</em></span><input name="cpf" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00" maxlength="14"></label>
       </div>
       <label class="campo" data-so-crianca hidden><span>Nome do responsável</span><input name="responsavel" autocomplete="name" maxlength="80"></label>
+      <label class="campo" data-so-online hidden><span>WhatsApp para contato</span><input name="telefone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="(31) 90000-0000" maxlength="16"></label>
       <label class="campo"><span>Atendimento</span><select name="atendimento" id="agenda-atendimento"></select></label>
       <label class="agenda__lembrar"><input type="checkbox" name="lembrar" checked><span>Lembrar neste aparelho para as próximas consultas</span></label>
       <p class="agenda__erro" id="agenda-erro" role="alert"></p>
       <div class="agenda__acoes">
         <button type="button" class="btn btn--suave" data-voltar hidden>Voltar</button>
-        <button type="submit" class="btn btn--primario btn--grande"><svg aria-hidden="true"><use href="#i-wa"/></svg><span>Salvar e agendar consulta</span></button>
+        <button type="submit" class="btn btn--primario btn--grande" data-enviar><svg aria-hidden="true"><use href="#i-wa"/></svg><span>Salvar e agendar consulta</span></button>
       </div>
     </form>
 
-    <p class="agenda__privacidade">Os dados ficam só neste aparelho e vão na mensagem do WhatsApp, que você revisa antes de enviar. <button type="button" class="agenda__apagar" data-apagar hidden>Apagar dados salvos</button></p>
+    <section class="agenda__etapa ag" data-etapa="horario" hidden>
+      <div class="ag__quem" id="ag-quem"></div>
+      <div class="ag__bloco">
+        <p class="agenda__rotulo">1. Unidade</p>
+        <div class="ag__unidades" id="ag-unidades" role="radiogroup" aria-label="Unidade de atendimento"></div>
+      </div>
+      <div class="ag__bloco" data-ag-cal hidden>
+        <div class="ag__mes">
+          <p class="agenda__rotulo">2. Dia</p>
+          <div class="ag__nav">
+            <button type="button" class="ag__seta" data-mes="-1" aria-label="Mês anterior">‹</button>
+            <strong id="ag-mes" aria-live="polite"></strong>
+            <button type="button" class="ag__seta" data-mes="1" aria-label="Próximo mês">›</button>
+          </div>
+        </div>
+        <div class="ag__semana" aria-hidden="true"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
+        <div class="ag__cal" id="ag-cal" role="grid" aria-label="Dias disponíveis"></div>
+      </div>
+      <div class="ag__bloco" data-ag-horas hidden>
+        <p class="agenda__rotulo" id="ag-dia-rot">3. Horário</p>
+        <div class="ag__horas" id="ag-horas" aria-labelledby="ag-dia-rot"></div>
+        <p class="ag__nota"><svg aria-hidden="true"><use href="#i-agenda"/></svg><span id="ag-nota">Cada consulta dura cerca de 30 min e pode atrasar até 15 min.</span></p>
+      </div>
+      <div class="ag__resumo" id="ag-resumo" hidden></div>
+      <p class="agenda__erro" id="ag-erro" role="alert"></p>
+      <div class="agenda__acoes ag__acoes">
+        <button type="button" class="btn btn--suave" data-ag-voltar>Voltar</button>
+        <button type="button" class="btn btn--primario btn--grande" data-ag-confirmar disabled><svg aria-hidden="true"><use href="#i-check"/></svg><span>Confirmar agendamento</span></button>
+      </div>
+    </section>
+
+    <section class="agenda__etapa ag-pronto" data-etapa="pronto" hidden>
+      <span class="ag-pronto__selo" aria-hidden="true"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="23"/><path d="M15 27l7.5 7.5L38 19"/></svg></span>
+      <h3 class="ag-pronto__titulo" tabindex="-1">Horário reservado!</h3>
+      <p class="ag-pronto__texto">Enviamos o pedido para a central. Envie a mensagem no WhatsApp para a atendente confirmar sua consulta.</p>
+      <div class="ag-pronto__codigo"><small>Código do agendamento</small><strong id="ag-codigo"></strong></div>
+      <ul class="ag-pronto__info" id="ag-pronto-info"></ul>
+      <div class="ag-pronto__acoes">
+        <a class="btn btn--primario btn--grande" id="ag-pronto-wa" href="#" target="_blank" rel="noopener noreferrer"><svg aria-hidden="true"><use href="#i-wa"/></svg><span>Enviar no WhatsApp</span></a>
+        <button type="button" class="btn btn--suave" data-abrir-meus>Ver meus agendamentos</button>
+      </div>
+    </section>
+
+    <p class="agenda__privacidade"><span data-priv>Os dados ficam só neste aparelho e vão na mensagem do WhatsApp, que você revisa antes de enviar.</span> <button type="button" class="agenda__apagar" data-apagar hidden>Apagar dados salvos</button></p>
+  </div>
+</dialog>
+<dialog class="agenda meus" id="meus" aria-labelledby="meus-titulo">
+  <div class="agenda__caixa">
+    <header class="agenda__topo">
+      <span class="agenda__icone" aria-hidden="true"><svg><use href="#i-agenda"/></svg></span>
+      <div>
+        <p class="agenda__contexto">Instituto Corujinhas</p>
+        <h2 id="meus-titulo">Meus agendamentos</h2>
+      </div>
+      <button type="button" class="agenda__fechar" data-fechar aria-label="Fechar">×</button>
+    </header>
+    <p class="agenda__demo" data-demo hidden>Demonstração: nenhum horário é reservado de verdade.</p>
+    <ul class="meus__lista" id="meus-lista" aria-live="polite"></ul>
+    <p class="meus__vazio" id="meus-vazio" hidden>Nenhum agendamento salvo neste aparelho.</p>
+    <details class="meus__buscar">
+      <summary>Agendou em outro aparelho?</summary>
+      <form id="meus-form" class="meus__form" novalidate>
+        <label class="campo"><span>Código</span><input name="codigo" placeholder="CJ-XXXXXX" autocapitalize="characters" maxlength="9" required></label>
+        <label class="campo"><span>Nascimento do paciente</span><input name="nascimento" type="date" required></label>
+        <button type="submit" class="btn btn--primario">Buscar</button>
+        <p class="agenda__erro" id="meus-erro" role="alert"></p>
+      </form>
+    </details>
   </div>
 </dialog>
 <p class="aviso-wa" id="aviso-wa" role="status" aria-live="polite"></p>
 
 <script src="assets/js/config.js?v=9aeda51dcc"></script>
-<script src="assets/js/mensagens.js?v=222fa19a8c"></script>
+<script src="assets/js/agenda-config.js?v=c4bf2b0103"></script>
+<script src="assets/js/agenda-api.js?v=1a5bac55c9"></script>
+<script src="assets/js/mensagens.js?v=b241b64dfb"></script>
 <script src="assets/js/mapas.js?v=b142939b1a"></script>
-<script src="assets/js/app.js?v=1478176d7c"></script>
+<script src="assets/js/app.js?v=ae82585ddc"></script>
 </body>
 </html>

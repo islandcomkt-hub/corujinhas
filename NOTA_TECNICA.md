@@ -135,3 +135,35 @@ Limite conhecido: o CPF e o nome vão dentro do link do WhatsApp (é como o wa.m
 - Com movimento reduzido, não há abertura nem animação passiva, e as avaliações viram uma lista que rola à mão.
 - Mascote animado (quadro parado com movimento reduzido), sem canvas 3D. Sem erros de console e sem rolagem horizontal da página. Atalhos da hero abrem a área certa e a faixa de avaliações só tem 4 ou 5 estrelas, em laço.
 - O site **não** foi publicado em domínio próprio. A prévia é privada até ser compartilhada.
+
+## v8 — Agenda online e painel da equipe (26/11/2026)
+
+- **Fluxo do paciente:** médico → pré-cadastro (+ WhatsApp) → "Agendar agora" → unidade → calendário → horário → "Confirmar agendamento".
+  - O pedido é gravado com status *solicitado* e um código `CJ-XXXXXX`.
+  - O WhatsApp da central abre com a mensagem pronta (código + dados do cadastro).
+- **Meus agendamentos:** botão no topo.
+  - Os códigos ficam salvos no aparelho, e em outro aparelho o paciente entra com código + data de nascimento.
+  - Cancelar libera o horário na hora e avisa a central pelo WhatsApp.
+- **Painel `/painel`:**
+  - login da equipe;
+  - agenda por dia, semana e mês;
+  - filtros por profissional, tipo de consulta, unidade e situação;
+  - busca por código, nome, CPF ou WhatsApp;
+  - detalhe com confirmar, realizado, faltou, cancelar e remarcar (só horários livres), mais mensagens prontas ao paciente;
+  - aba Urgência, com encaixe;
+  - aba Cancelados, com fila (oferecer vaga pelo WhatsApp ou adiantar o paciente);
+  - aba Escalas: profissional × unidade × dia, faixas editáveis, folgas e regras gerais.
+- **Arquivos:**
+  - `supabase/schema.sql` (tabelas, RLS, funções `agenda_*`);
+  - `assets/js/agenda-api.js` (modos supabase / demo / desligado);
+  - `assets/js/agenda-config.js` (chaves);
+  - `assets/js/painel.js`, `assets/css/painel.css`, `painel/index.html`.
+- **Segurança:**
+  - o visitante (anon) não lê tabela nenhuma, só chama `agenda_*`;
+  - a equipe é validada pela tabela `equipe`;
+  - a CSP libera só `connect-src https://*.supabase.co`;
+  - `/painel` vai com `noindex` e `no-store`.
+- **Testes:**
+  - `pgtest/teste.mjs`: 26 verificações do SQL em PGlite;
+  - `scripts/teste_agenda.py` e `scripts/teste_painel.py`: fluxo completo em celular e computador, com e sem CSP.
+- **Ativação:** ver `supabase/LEIA-ME.md`.

@@ -71,6 +71,35 @@
     }
   }
 
+  /* ---------- Agenda online ---------- */
+  const DIAS = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
+  const dataBR = (iso) => { const [a, m, d] = iso.split("-"); return `${d}/${m}/${a}`; };
+  const dataLonga = (iso) => `${DIAS[new Date(iso + "T12:00:00Z").getUTCDay()]}, ${dataBR(iso).slice(0, 5)}`;
+  const foneBR = (t) => { const d = String(t || "").replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, ""); return d.length === 11 ? `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}` : d.length === 10 ? `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}` : d; };
+
+  // Pedido feito pela agenda online: a atendente confere pelo código no painel e confirma.
+  function criarLinkAgendamento(r) {
+    const pac = { ...r.paciente, cpf: r.paciente.cpf || "" };
+    const linhas = [
+      `${ABERTURA} e reservei um horário pela agenda online. Podem confirmar, por favor?`,
+      ``,
+      `Código: ${r.codigo}`,
+      `• Profissional: ${r.profissional}${r.area ? ` (${r.area})` : ""}`,
+      `• Unidade: ${r.unidade}`,
+      `• Data: ${dataLonga(r.data)}/${r.data.slice(0, 4)} às ${r.hora}`
+    ];
+    return link(linhas.join("\n") + blocoPaciente(pac) + (r.paciente.telefone ? `\n• WhatsApp: ${foneBR(r.paciente.telefone)}` : ""));
+  }
+  function criarLinkCancelamento(r) {
+    return link(`${ABERTURA}. Cancelei pelo site o agendamento ${r.codigo}${r.paciente ? ` de ${r.paciente}` : ""}: ${r.profissional}, ${dataLonga(r.data)} às ${r.hora}, unidade ${r.unidade}. O horário já foi liberado na agenda.`);
+  }
+  // Painel: mensagem da equipe para o WhatsApp do paciente.
+  const criarLinkPaciente = (telefone, texto) => {
+    let d = String(telefone || "").replace(/\D/g, "");
+    if (d.length <= 11) d = "55" + d;
+    return `https://wa.me/${d}?text=${encodeURIComponent(texto)}`;
+  };
+
   const eventos = (window.CorujinhasEventos = []);
   function registrarIntencao(pedido) {
     const registro = { ...pedido, momento: new Date().toISOString() };
@@ -83,6 +112,7 @@
 
   window.CorujinhasMensagens = {
     CENTRAL_WHATSAPP, criarLinkConsulta, criarLinkArea, criarLinkServico, criarLinkAcompanhamento, criarLinkGeral,
-    encaminharPedido, registrarIntencao
+    encaminharPedido, registrarIntencao,
+    criarLinkAgendamento, criarLinkCancelamento, criarLinkPaciente, util: { dataBR, dataLonga, foneBR, DIAS }
   };
 })();
