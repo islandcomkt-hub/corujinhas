@@ -443,7 +443,7 @@
       const info = { codigo: r.codigo, profissional: ag.prof.nome, area: ag.area, unidade: u.nome, data: ag.dia, hora: ag.hora, paciente: { ...p } };
       salvarMeu({ codigo: r.codigo, nascimento: p.nascimento, paciente: p.nome, profissional: ag.prof.nome, area: ag.area, unidade: u.nome, data: ag.dia, hora: ag.hora, status: r.status || "solicitado" });
       let url = M.criarLinkAgendamento(info);
-      if (A.modo === "demo") url = url.replace("text=", "text=" + encodeURIComponent("[TESTE DA AGENDA ONLINE — DESCONSIDERAR] "));
+      if (A.modo === "demo") url = url.replace("text=", "text=" + encodeURIComponent("🧪 *TESTE DA AGENDA ONLINE — desconsiderar*\n\n"));
       M.registrarIntencao({ ...pedidoAtual, unidadeId: ag.unidade, agendaOnline: true });
       mostrarPronto(info, url);
       const w = window.open(url, "_blank"); if (w) { try { w.opener = null; } catch { /* */ } }
@@ -526,7 +526,7 @@
         const r = await A.cancelar(m.codigo, m.nascimento);
         Object.assign(m, { status: r?.status || "cancelado_paciente" }); gravar(CHAVE_AG, meus);
         let url = M.criarLinkCancelamento({ ...m, paciente: m.paciente.split(" ")[0] });
-        if (A.modo === "demo") url = url.replace("text=", "text=" + encodeURIComponent("[TESTE DA AGENDA ONLINE — DESCONSIDERAR] "));
+        if (A.modo === "demo") url = url.replace("text=", "text=" + encodeURIComponent("🧪 *TESTE DA AGENDA ONLINE — desconsiderar*\n\n"));
         renderMeus();
         const aviso = $("#aviso-wa"); aviso.textContent = "Agendamento cancelado. Avisando a central pelo WhatsApp…";
         aviso.classList.add("aviso-wa--on"); setTimeout(() => aviso.classList.remove("aviso-wa--on"), 3600);

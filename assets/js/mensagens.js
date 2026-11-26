@@ -78,20 +78,46 @@
   const foneBR = (t) => { const d = String(t || "").replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, ""); return d.length === 11 ? `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}` : d.length === 10 ? `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}` : d; };
 
   // Pedido feito pela agenda online: a atendente confere pelo código no painel e confirma.
+  // O WhatsApp de quem envia já identifica o contato, então o número não entra no texto.
   function criarLinkAgendamento(r) {
-    const pac = { ...r.paciente, cpf: r.paciente.cpf || "" };
+    const p = r.paciente || {};
+    const [a, m, d] = (p.nascimento || "--").split("-");
+    const crianca = p.tipo === "crianca";
     const linhas = [
-      `${ABERTURA} e reservei um horário pela agenda online. Podem confirmar, por favor?`,
+      `Olá! 👋 Vim pelo site do Instituto Corujinhas e reservei um horário pela agenda online.`,
       ``,
-      `Código: ${r.codigo}`,
-      `• Profissional: ${r.profissional}${r.area ? ` (${r.area})` : ""}`,
-      `• Unidade: ${r.unidade}`,
-      `• Data: ${dataLonga(r.data)}/${r.data.slice(0, 4)} às ${r.hora}`
+      `🔖 *Código:* ${r.codigo}`,
+      ``,
+      `📅 *Consulta*`,
+      `Profissional: ${r.profissional}${r.area ? ` (${r.area})` : ""}`,
+      `Data: ${dataLonga(r.data)}/${r.data.slice(0, 4)} às ${r.hora}`,
+      `Unidade: ${r.unidade}`,
+      ``,
+      `${crianca ? "🧒" : "🙂"} *Paciente*`,
+      `Nome: ${p.nome}`,
+      p.nascimento ? `Nascimento: ${d}/${m}/${a} (${crianca ? "criança" : "adulto"})` : null,
+      p.cpf ? `CPF: ${p.cpf}` : null,
+      p.responsavel ? `Responsável: ${p.responsavel}` : null,
+      p.atendimento ? `Atendimento: ${p.atendimento}` : null,
+      ``,
+      `Podem confirmar, por favor? 😊`
     ];
-    return link(linhas.join("\n") + blocoPaciente(pac) + (r.paciente.telefone ? `\n• WhatsApp: ${foneBR(r.paciente.telefone)}` : ""));
+    return link(linhas.filter((l) => l !== null).join("\n"));
   }
   function criarLinkCancelamento(r) {
-    return link(`${ABERTURA}. Cancelei pelo site o agendamento ${r.codigo}${r.paciente ? ` de ${r.paciente}` : ""}: ${r.profissional}, ${dataLonga(r.data)} às ${r.hora}, unidade ${r.unidade}. O horário já foi liberado na agenda.`);
+    const linhas = [
+      `Olá! Vim pelo site do Instituto Corujinhas.`,
+      ``,
+      `❌ *Cancelei um agendamento*`,
+      `🔖 Código: ${r.codigo}`,
+      r.paciente ? `Paciente: ${r.paciente}` : null,
+      `Profissional: ${r.profissional}`,
+      `Data: ${dataLonga(r.data)} às ${r.hora}`,
+      `Unidade: ${r.unidade}`,
+      ``,
+      `O horário já foi liberado na agenda. Obrigado! 🙏`
+    ];
+    return link(linhas.filter((l) => l !== null).join("\n"));
   }
   // Painel: mensagem da equipe para o WhatsApp do paciente.
   const criarLinkPaciente = (telefone, texto) => {

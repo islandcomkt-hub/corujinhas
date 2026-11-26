@@ -149,7 +149,7 @@
    * Modo DEMONSTRAÇÃO (localStorage) — mesmas regras do banco
    * ================================================================= */
   function adaptadorDemo() {
-    const CHAVE = "corujinhas-demo-v1";
+    const CHAVE = "corujinhas-demo-v2";
     const FAIXAS = [["08:00", "12:00"], ["17:00", "22:00"]];
     const C = window.CORUJINHAS_CONFIG;
     function semente() {
@@ -160,6 +160,11 @@
         ["unidade-horto", 1], ["unidade-horto", 2], ["unidade-horto", 3], ["unidade-bom-jardim", 3], ["unidade-bom-jardim", 4],
         ["unidade-shopping", 5], ["unidade-shopping", 6], ["unidade-shopping", 0]
       ].map(([u, d], i) => ({ id: i + 1, profissional_id: "dra_leticia_nacife", unidade_id: u, dia_semana: d, faixas: FAIXAS }));
+      // TESTE: os demais profissionais recebem uma escala de exemplo (2 dias em cada uma de 3 unidades) para dar para agendar com todos.
+      profissionais.filter((p) => p.id !== "dra_leticia_nacife").forEach((p, i) => {
+        [[1, 2], [3, 4], [5, 6]].forEach((dias, k) => dias.forEach((d) =>
+          escalas.push({ id: escalas.length + 1, profissional_id: p.id, unidade_id: unidades[(i + k) % unidades.length].id, dia_semana: d, faixas: FAIXAS })));
+      });
       const banco = { unidades, profissionais, escalas, bloqueios: [], agendamentos: [], seq: 100,
         ajustes: { duracao_min: 30, tolerancia_min: 15, antecedencia_min: 60, horizonte_dias: 60, max_ativos_por_contato: 4 } };
       // alguns pedidos de exemplo para o painel não começar vazio
